@@ -163,14 +163,16 @@ async function createBuffer(array,usage){
 }
 
 var mdl;
-fetch('./src/test.json').then((response) => response.json()).then((json) => console.log(json));
-console.log(mdl);
-console.log(mdl["positions"]);
 
 async function ur(){
 	if (!navigator.gpu) {return;}
 
 	await init();
+
+	await fetch('./src/test.json').then((response) => response.json()).then((json) => {console.log(json); mdl = json;});
+	console.log(mdl);
+	console.log(mdl["positions"]);
+	
 
 	const depthTexDesc = {
 		size: [canvas.width, canvas.height, 1],
