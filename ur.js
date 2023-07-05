@@ -147,7 +147,7 @@ async function createPipeline(){
 
 async function createBuffer(array,usage){
 	let desc = {
-		size: (array.length + 3) & ~3,
+		size: (array.byteLength + 3) & ~3,
 		usage,
 		mappedAtCreation: true
 	};
@@ -171,7 +171,7 @@ async function ur(){
 
 	await fetch('./src/test.json').then((response) => response.json()).then((json) => {mdl = json;});
 	console.log(mdl);
-	console.log(mdl.model.positions);
+	console.log(mdl.model.positions.byteLength);
 	
 
 	const depthTexDesc = {
