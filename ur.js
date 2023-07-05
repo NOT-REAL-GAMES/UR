@@ -52,9 +52,9 @@ async function init(){
 }
 
 async function createPipeline(){	
-	posBuf = await createBuffer(mdl.positions, GPUBufferUsage.VERTEX);
-	colBuf = await createBuffer(mdl.colors, GPUBufferUsage.VERTEX);
-	idxBuf = await createBuffer(mdl.indices, GPUBufferUsage.INDEX);
+	posBuf = await createBuffer(mdl.model.positions, GPUBufferUsage.VERTEX);
+	colBuf = await createBuffer(mdl.model.colors, GPUBufferUsage.VERTEX);
+	idxBuf = await createBuffer(mdl.model.indices, GPUBufferUsage.INDEX);
 
 	const vModule = device.createShaderModule({code:
 		`
@@ -171,7 +171,7 @@ async function ur(){
 
 	await fetch('./src/test.json').then((response) => response.json()).then((json) => {mdl = json;});
 	console.log(mdl);
-	console.log(mdl.positions);
+	console.log(mdl.model.positions);
 	
 
 	const depthTexDesc = {
