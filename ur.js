@@ -162,7 +162,7 @@ async function createBuffer(array,usage){
 	return buffer;
 }
 
-var blabla = fetch('./src/test.json').then((response) => response.json());
+var mdl = fetch('./src/test.json').then((response) => response.json());
 console.log(mdl.positions);
 
 async function ur(){
