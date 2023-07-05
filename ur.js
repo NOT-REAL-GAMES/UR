@@ -163,8 +163,7 @@ async function createBuffer(array,usage){
 }
 
 var mdl;
-fetch('./src/test.json').then((response) => 
-mdl = response.json());
+fetch(url+'/test.json').then((response) => response.json()).then((json) => mdl = json);
 console.log(mdl);
 console.log(mdl["positions"]);
 
