@@ -146,18 +146,23 @@ async function createPipeline(){
 }
 
 async function createBuffer(array,usage){
+	console.log((array.length* + 4) & ~3);
+	let mult = usage == GPUBufferUsage.VERTEX ?
+		4 : 2;
 	let desc = {
-		size: (array.byteLength + 3) & ~3,
+		size: (array.length*mult) & ~3,
 		usage,
 		mappedAtCreation: true
 	};
-	let buffer = device.createBuffer(desc);
+	let buffer = await device.createBuffer(desc);
 	//TODO: write switch case for every possible usage.
+	let bla = (buffer.getMappedRange());
+	console.log(bla);
 	const writeArray =
 		usage == GPUBufferUsage.VERTEX
-		? new Float32Array(buffer.getMappedRange())
-		: new Uint16Array(buffer.getMappedRange());
-	writeArray.set(array);
+		? new Float32Array(bla)
+		: new Uint16Array(bla);
+	writeArray.set(array,0);
 	buffer.unmap();
 	return buffer;
 }
@@ -171,7 +176,7 @@ async function ur(){
 
 	await fetch('./src/test.json').then((response) => response.json()).then((json) => {mdl = json;});
 	console.log(mdl);
-	console.log(mdl.model.positions.byteLength);
+	console.log(mdl.model.positions.length);
 	
 
 	const depthTexDesc = {
@@ -235,7 +240,7 @@ async function ur(){
 	pass.setVertexBuffer(0, posBuf);
 	pass.setVertexBuffer(1, colBuf);
 	pass.setIndexBuffer(idxBuf,'uint16');
-	pass.drawIndexed(indices.length,1);
+	pass.drawIndexed(mdl.model.indices.length,1);
 	pass.end();
 
 	device.queue.submit([encoder.finish()]);
