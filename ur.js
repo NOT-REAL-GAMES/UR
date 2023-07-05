@@ -52,9 +52,9 @@ async function init(){
 }
 
 async function createPipeline(){	
-	posBuf = await createBuffer(mdl.positions, GPUBufferUsage.VERTEX);
-	colBuf = await createBuffer(mdl.colors, GPUBufferUsage.VERTEX);
-	idxBuf = await createBuffer(mdl.indices, GPUBufferUsage.INDEX);
+	posBuf = await createBuffer(mdl.model.positions, GPUBufferUsage.VERTEX);
+	colBuf = await createBuffer(mdl.model.colors, GPUBufferUsage.VERTEX);
+	idxBuf = await createBuffer(mdl.model.indices, GPUBufferUsage.INDEX);
 
 	const vModule = device.createShaderModule({code:
 		`
