@@ -74,13 +74,13 @@ async function createPipeline(){
 	});
 
 	const fModule = device.createShaderModule({code:
-	`
-	@fragment
-	fn main(@location(0) inColor: vec3f) -> @location(0) vec4f {
-    	return vec4f(inColor, 1);
-	}
+		`
+		@fragment
+		fn main(@location(0) inColor: vec3f) -> @location(0) vec4f {
+    		return vec4f(inColor, 1);
+		}
 
-	`
+		`
 	});
 
 	const posBufDesc = {
@@ -160,22 +160,7 @@ async function createBuffer(array,usage){
 	return buffer;
 }
 
-
-//TODO: set all this info up to the ur func into separate file
-const positions = new Float32Array([
-    1.0, -1.0, 0.0, 
-    -1.0, -1.0, 0.0, 
-    0.0, 1.0, 0.0,
-    0.0, 5.0, 0.0
-]);
-
-const colors = new Float32Array([
-    1.0, 0.0, 0.0,
-    0.0, 1.0, 0.0,
-    0.0, 0.0, 1.0
-]);
-
-const indices = new Uint16Array([0, 1, 2, 0, 1, 3]);
+fetch('./test.json').then((response) => response.json()).then((json) => console.log(json));
 
 async function ur(){
 	if (!navigator.gpu) {return;}
