@@ -52,9 +52,9 @@ async function init(){
 }
 
 async function createPipeline(){	
-	posBuf = await createBuffer(positions, GPUBufferUsage.VERTEX);
-	colBuf = await createBuffer(colors, GPUBufferUsage.VERTEX);
-	idxBuf = await createBuffer(indices, GPUBufferUsage.INDEX);
+	posBuf = await createBuffer(mdl.positions, GPUBufferUsage.VERTEX);
+	colBuf = await createBuffer(mdl.colors, GPUBufferUsage.VERTEX);
+	idxBuf = await createBuffer(mdl.indices, GPUBufferUsage.INDEX);
 
 	const vModule = device.createShaderModule({code:
 		`
@@ -162,7 +162,7 @@ async function createBuffer(array,usage){
 	return buffer;
 }
 
-fetch(url+'/test.json').then((response) => response.json()).then((json) => console.log(json));
+var mdl = fetch(url+'/test.json').then((response) => response.json());
 
 async function ur(){
 	if (!navigator.gpu) {return;}
