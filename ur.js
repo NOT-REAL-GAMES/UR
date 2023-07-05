@@ -147,7 +147,7 @@ async function createPipeline(){
 
 async function createBuffer(array,usage){
 	let desc = {
-		size: (array.byteLength + 3) & ~3,
+		size: (array.length + 3) & ~3,
 		usage,
 		mappedAtCreation: true
 	};
