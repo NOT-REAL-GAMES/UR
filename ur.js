@@ -162,7 +162,7 @@ async function createBuffer(array,usage){
 	return buffer;
 }
 
-var mdl = fetch(url+'/test.json').then((response) => response.json());
+var mdl = fetch('./test.json').then((response) => response.json());
 
 async function ur(){
 	if (!navigator.gpu) {return;}
