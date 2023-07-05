@@ -20,6 +20,8 @@ var idxBuf;
 
 var encoder;
 
+var url = window.location.href;
+
 async function init(){
 	canvas = document.querySelector("#ur");
 	adapter = await navigator.gpu.requestAdapter();
@@ -160,7 +162,7 @@ async function createBuffer(array,usage){
 	return buffer;
 }
 
-fetch('./test.json').then((response) => response.json()).then((json) => console.log(json));
+fetch(url+'/test.json').then((response) => response.json()).then((json) => console.log(json));
 
 async function ur(){
 	if (!navigator.gpu) {return;}
