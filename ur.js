@@ -20,6 +20,10 @@ var posBuf;
 var colBuf;
 var idxBuf;
 
+var posBuf2;
+var colBuf2;
+var idxBuf2;
+
 var encoder;
 
 var bindGroup;
@@ -66,10 +70,31 @@ async function init(){
 
 }
 
+function rotate(pos,rot,rad){
+	var vec = new Array(Math.floor(pos.length/3));
+	for(var i = 0; i<pos.length;i+=3){
+		vec[Math.floor(i/3)] = glm.vec3.fromValues(pos[i],pos[i+1],pos[i+2]);
+		glm.vec3.transformMat4(vec[Math.floor(i/3)],vec[Math.floor(i/3)],rot);
+	}
+	
+	var arr = new Array(pos.length);
+	for(var i=0; i<arr.length;i+=3){
+		arr[i] = vec[Math.floor(i/3)][0];
+		arr[i+1] = vec[Math.floor(i/3)][1];
+		arr[i+2] = vec[Math.floor(i/3)][2];
+	}
+	console.log(arr);
+	return arr;
+}
+
 async function createPipeline(){	
 	posBuf = await createBuffer(mdl.model.positions, GPUBufferUsage.VERTEX);
 	colBuf = await createBuffer(mdl.model.colors, GPUBufferUsage.VERTEX);
 	idxBuf = await createBuffer(mdl.model.indices, GPUBufferUsage.INDEX);
+
+	posBuf2 = await createBuffer(mdl2.model.positions, GPUBufferUsage.VERTEX);
+	colBuf2 = await createBuffer(mdl2.model.colors, GPUBufferUsage.VERTEX);
+	idxBuf2 = await createBuffer(mdl2.model.indices, GPUBufferUsage.INDEX);
 
 	const vModule = device.createShaderModule({code:
 		`
@@ -88,12 +113,6 @@ async function createPipeline(){
 		fn main(@location(0) inPos: vec3f,
 				@location(1) inColor: vec3f) -> VSOut {
 			var vsOut: VSOut;
-			let matrix = mat4x4f(
-				1,0,0,0,
-				0,1,0,0,
-				0,0,1,0,
-				0,0,1,1
-			);
 			vsOut.Position = uniforms.projMatrix*vec4f(inPos, 1);
 			vsOut.color = inColor;
 			return vsOut;
@@ -159,7 +178,7 @@ async function createPipeline(){
 		},
 		primitive: {
 			frontFace: 'cw',
-			cullMode: 'back',
+			cullMode: 'none',
 			topology: 'triangle-list'
 		},
 		depthStencil: {
@@ -195,13 +214,15 @@ async function createBuffer(array,usage){
 }
 
 var mdl;
+var mdl2;
 
 async function ur(){
 	if (!navigator.gpu) {return;}
 
 	await init();
 
-	await fetch('./src/test.json').then((response) => response.json()).then((json) => {mdl = json;});	
+	await fetch('./src/cube.json').then((response) => response.json()).then((json) => {mdl = json;});	
+	await fetch('./src/floor.json').then((response) => response.json()).then((json) => {mdl2 = json;});	
 
 	const depthTexDesc = {
 		size: [canvas.width, canvas.height, 1],
@@ -216,12 +237,18 @@ async function ur(){
 
 	await createPipeline();
 
-
-	
 	render();
 }
 
 async function render(){
+
+	var now = Date.now() / 1000;
+
+	var rotation = glm.mat4.create();
+	glm.mat4.fromRotation(rotation,now,glm.vec3.fromValues(5,5,0));
+
+ 	var fuck = rotate(mdl.model.positions,rotation,now);
+	posBuf = await createBuffer(fuck, GPUBufferUsage.VERTEX);
 
 	colorTex = context.getCurrentTexture();
 	colorTexView = colorTex.createView();
@@ -272,13 +299,10 @@ async function render(){
 
 	glm.mat4.perspectiveZO(projectionMatrix, 2, canvas.clientWidth/canvas.clientHeight, 0.01, 10000.0);
 
-	const viewMatrix = glm.mat4.create();
-    glm.mat4.translate(viewMatrix, viewMatrix, glm.vec3.fromValues(0, 0, -5));
-    const now = Date.now() / 1000;
-    glm.mat4.rotate(viewMatrix, viewMatrix, now, glm.vec3.fromValues(1, 1, 0));
-    const modelViewProjectionMatrix = glm.mat4.create();
+	var viewMatrix = glm.mat4.create();
+	glm.mat4.translate(viewMatrix, viewMatrix, glm.vec3.fromValues(0, 0, -5));
+    var modelViewProjectionMatrix = glm.mat4.create();
     glm.mat4.multiply(modelViewProjectionMatrix, projectionMatrix, viewMatrix);
-    device.queue.writeBuffer(transformBuffer, 0, modelViewProjectionMatrix);
 
 	encoder = device.createCommandEncoder();
 	const pass = encoder.beginRenderPass(renderPassDesc);
@@ -302,10 +326,19 @@ async function render(){
 		canvas.height
 	);
 
+    device.queue.writeBuffer(transformBuffer, 0, modelViewProjectionMatrix);
+
 	pass.setVertexBuffer(0, posBuf);
 	pass.setVertexBuffer(1, colBuf);
 	pass.setIndexBuffer(idxBuf,'uint16');
 	pass.drawIndexed(mdl.model.indices.length,1);
+	
+	pass.setVertexBuffer(0, posBuf2);
+	pass.setVertexBuffer(1, colBuf2);
+	pass.setIndexBuffer(idxBuf2,'uint16');	
+
+	pass.drawIndexed(mdl2.model.indices.length,1);
+
 	pass.end();
 
 	await device.queue.submit([encoder.finish()]);
