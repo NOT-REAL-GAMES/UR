@@ -70,7 +70,7 @@ async function init(){
 
 }
 
-function rotate(pos,rot,rad){
+function rotate(pos,rot){
 	var vec = new Array(Math.floor(pos.length/3));
 	for(var i = 0; i<pos.length;i+=3){
 		vec[Math.floor(i/3)] = glm.vec3.fromValues(pos[i],pos[i+1],pos[i+2]);
@@ -245,9 +245,9 @@ async function render(){
 	var now = Date.now() / 1000;
 
 	var rotation = glm.mat4.create();
-	glm.mat4.fromRotation(rotation,now,glm.vec3.fromValues(5,5,0));
+	glm.mat4.fromRotation(rotation,now*15,glm.vec3.fromValues(5,5,0));
 
- 	var fuck = rotate(mdl.model.positions,rotation,now);
+ 	var fuck = rotate(mdl.model.positions,rotation);
 	posBuf = await createBuffer(fuck, GPUBufferUsage.VERTEX);
 
 	colorTex = context.getCurrentTexture();
@@ -301,6 +301,7 @@ async function render(){
 
 	var viewMatrix = glm.mat4.create();
 	glm.mat4.translate(viewMatrix, viewMatrix, glm.vec3.fromValues(0, 0, -5));
+	glm.mat4.rotate(viewMatrix,viewMatrix,now,glm.vec3.fromValues(0,5,0));
     var modelViewProjectionMatrix = glm.mat4.create();
     glm.mat4.multiply(modelViewProjectionMatrix, projectionMatrix, viewMatrix);
 
