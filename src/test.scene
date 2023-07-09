@@ -1,0 +1,25 @@
+{
+	"gameObjects": [{
+		"transform":{
+			"position": [0,0,0],
+			"rotation": [0,0,0],
+			"scale": 1
+		},
+		"components":{
+			"renderer":{
+				"modelSource": "./src/cube.json"
+			}
+		}
+	},{
+		"transform":{
+			"position": [0,-10,0],
+			"rotation": [0,0,0],
+			"scale": 1
+		},
+		"components":{
+			"renderer":{
+				"modelSource": "./src/floor.json"
+			}
+		}
+	}]
+}

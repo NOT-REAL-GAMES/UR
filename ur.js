@@ -1,4 +1,4 @@
-import * as glm from './src/index.js';
+import * as glm from './src/glm/index.js';
 
 var canvas;
 var adapter;
@@ -16,13 +16,8 @@ var colorTexView;
 var depthTex;
 var depthTexView;
 
-var posBuf;
-var colBuf;
-var idxBuf;
-
-var posBuf2;
-var colBuf2;
-var idxBuf2;
+var models = [];
+var modelsMeta = [];
 
 var encoder;
 
@@ -83,53 +78,28 @@ function rotate(pos,rot){
 		arr[i+1] = vec[Math.floor(i/3)][1];
 		arr[i+2] = vec[Math.floor(i/3)][2];
 	}
-	console.log(arr);
+	//console.log(arr);
 	return arr;
 }
 
 async function createPipeline(){	
-	posBuf = await createBuffer(mdl.model.positions, GPUBufferUsage.VERTEX);
-	colBuf = await createBuffer(mdl.model.colors, GPUBufferUsage.VERTEX);
-	idxBuf = await createBuffer(mdl.model.indices, GPUBufferUsage.INDEX);
+	const depthTexDesc = {
+		size: [canvas.width, canvas.height, 1],
+		dimension: '2d',
+		format: 'depth24plus-stencil8',
+		usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC
+	};
 
-	posBuf2 = await createBuffer(mdl2.model.positions, GPUBufferUsage.VERTEX);
-	colBuf2 = await createBuffer(mdl2.model.colors, GPUBufferUsage.VERTEX);
-	idxBuf2 = await createBuffer(mdl2.model.indices, GPUBufferUsage.INDEX);
+	depthTex = device.createTexture(depthTexDesc);
+	depthTexView = depthTex.createView();
 
-	const vModule = device.createShaderModule({code:
-		`
-		struct VSOut {
-			@builtin(position) Position: vec4f,
-			@location(0) color: vec3f,
-		};
+	var frag; var vert;
 
-		 struct Uniforms {
-			projMatrix: mat4x4<f32>
-		}
-		
-		@group(0) @binding(0) var<uniform> uniforms: Uniforms;
+	await fetch('./src/default.vert').then((response) => response.text()).then((shader) => {vert = shader;});	
+	await fetch('./src/default.frag').then((response) => response.text()).then((shader) => {frag = shader;});	
 
-		@vertex
-		fn main(@location(0) inPos: vec3f,
-				@location(1) inColor: vec3f) -> VSOut {
-			var vsOut: VSOut;
-			vsOut.Position = uniforms.projMatrix*vec4f(inPos, 1);
-			vsOut.color = inColor;
-			return vsOut;
-		}
-		
-		`
-	});
-
-	const fModule = device.createShaderModule({code:
-		`
-		@fragment
-		fn main(@location(0) inColor: vec3f) -> @location(0) vec4f {
-    		return vec4f(inColor, 1);
-		}
-
-		`
-	});
+	const vModule = device.createShaderModule({code:vert});
+	const fModule = device.createShaderModule({code:frag});
 
 	const posBufDesc = {
 		attributes: [{
@@ -213,26 +183,41 @@ async function createBuffer(array,usage){
 	return buffer;
 }
 
-var mdl;
-var mdl2;
+var scene;
+
+async function initializeScene(){
+	
+	await fetch('./src/test.scene').then((response) => response.json()).then((json) => {scene = json;});	
+
+	console.log(scene.gameObjects);
+
+	for(var i = 0;i<scene.gameObjects.length;++i){
+		if(scene.gameObjects[i].components.renderer!=null){
+			var model;
+			console.log("model found");
+			await fetch(
+				scene.gameObjects[i].components.renderer.modelSource
+			).then((response) => response.json()).then((json) => {model = json;});	
+			models.push({
+				pos: model.positions,
+				col: model.colors,
+				idx: model.indices
+			})
+		}
+	}
+
+	//await fetch('./src/cube.json').then((response) => response.json()).then((json) => {mdl = json;});	
+	//await fetch('./src/floor.json').then((response) => response.json()).then((json) => {mdl2 = json;});	
+
+}
 
 async function ur(){
 	if (!navigator.gpu) {return;}
 
 	await init();
 
-	await fetch('./src/cube.json').then((response) => response.json()).then((json) => {mdl = json;});	
-	await fetch('./src/floor.json').then((response) => response.json()).then((json) => {mdl2 = json;});	
 
-	const depthTexDesc = {
-		size: [canvas.width, canvas.height, 1],
-		dimension: '2d',
-		format: 'depth24plus-stencil8',
-		usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC
-	};
-
-	depthTex = device.createTexture(depthTexDesc);
-	depthTexView = depthTex.createView();
+	await initializeScene();
 
 
 	await createPipeline();
@@ -245,10 +230,19 @@ async function render(){
 	var now = Date.now() / 1000;
 
 	var rotation = glm.mat4.create();
-	glm.mat4.fromRotation(rotation,now*15,glm.vec3.fromValues(5,5,0));
+	glm.mat4.fromRotation(rotation,0.01,glm.vec3.fromValues(1,1,0));
 
- 	var fuck = rotate(mdl.model.positions,rotation);
-	posBuf = await createBuffer(fuck, GPUBufferUsage.VERTEX);
+ 	models[0].pos = rotate(models[0].pos,rotation);
+
+
+	modelsMeta = [];
+	for(var i = 0;i<models.length;++i){
+		modelsMeta.push({
+			posBuf: await createBuffer(models[i].pos, GPUBufferUsage.VERTEX),
+			colBuf: await createBuffer(models[i].col, GPUBufferUsage.VERTEX),
+			idxBuf: await createBuffer(models[i].idx, GPUBufferUsage.INDEX)
+		});
+	}
 
 	colorTex = context.getCurrentTexture();
 	colorTexView = colorTex.createView();
@@ -312,33 +306,17 @@ async function render(){
 
 	pass.setPipeline(pipeline);
 
-	pass.setViewport(
-		0,
-		0,
-		canvas.width,
-		canvas.height,
-		0,
-		1
-	);
-	pass.setScissorRect(
-		0,
-		0,
-		canvas.width,
-		canvas.height
-	);
+	pass.setViewport(0,0,canvas.width,canvas.height,0,1);
+	pass.setScissorRect(0,0,canvas.width,canvas.height);
 
     device.queue.writeBuffer(transformBuffer, 0, modelViewProjectionMatrix);
 
-	pass.setVertexBuffer(0, posBuf);
-	pass.setVertexBuffer(1, colBuf);
-	pass.setIndexBuffer(idxBuf,'uint16');
-	pass.drawIndexed(mdl.model.indices.length,1);
-	
-	pass.setVertexBuffer(0, posBuf2);
-	pass.setVertexBuffer(1, colBuf2);
-	pass.setIndexBuffer(idxBuf2,'uint16');	
-
-	pass.drawIndexed(mdl2.model.indices.length,1);
+	for(var i = 0;i<models.length;++i){
+		pass.setVertexBuffer(0, modelsMeta[i].posBuf);
+		pass.setVertexBuffer(1, modelsMeta[i].colBuf);
+		pass.setIndexBuffer(modelsMeta[i].idxBuf,'uint16');
+		pass.drawIndexed(models[i].idx.length,1);
+	}
 
 	pass.end();
 
