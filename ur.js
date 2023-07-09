@@ -19,6 +19,8 @@ var depthTexView;
 var models = [];
 var modelsMeta = [];
 
+var gameObjects = [];
+
 var encoder;
 
 var bindGroup;
@@ -65,7 +67,7 @@ async function init(){
 
 }
 
-function rotate(pos,rot){
+function transform(pos,rot){
 	var vec = new Array(Math.floor(pos.length/3));
 	for(var i = 0; i<pos.length;i+=3){
 		vec[Math.floor(i/3)] = glm.vec3.fromValues(pos[i],pos[i+1],pos[i+2]);
@@ -162,7 +164,7 @@ async function createPipeline(){
 }
 
 async function createBuffer(array,usage){
-	console.log((array.length* + 4) & ~3);
+	//console.log((array.length* + 4) & ~3);
 	let mult = usage == GPUBufferUsage.VERTEX ?
 		4 : 4;
 	let desc = {
@@ -173,7 +175,7 @@ async function createBuffer(array,usage){
 	let buffer = await device.createBuffer(desc);
 	//TODO: write switch case for every possible usage.
 	let bla = (buffer.getMappedRange());
-	console.log(bla);
+	//console.log(bla);
 	const writeArray =
 		usage == GPUBufferUsage.VERTEX
 		? new Float32Array(bla)
@@ -198,6 +200,7 @@ async function initializeScene(){
 			await fetch(
 				scene.gameObjects[i].components.renderer.modelSource
 			).then((response) => response.json()).then((json) => {model = json;});	
+			gameObjects.push(scene.gameObjects[i]);
 			models.push({
 				pos: model.positions,
 				col: model.colors,
@@ -225,15 +228,44 @@ async function ur(){
 	render();
 }
 
-async function render(){
-
-	var now = Date.now() / 1000;
+async function updatePositionBuffers(){
 
 	var rotation = glm.mat4.create();
 	glm.mat4.fromRotation(rotation,0.01,glm.vec3.fromValues(1,1,0));
+	models[0].pos = transform(models[0].pos,rotation);
 
- 	models[0].pos = rotate(models[0].pos,rotation);
-
+	for(var i = 0;i<models.length;++i){
+		
+		if(gameObjects[i].transform.currentRot != gameObjects[i].transform.rotation ||
+			gameObjects[i].transform.currentPos != gameObjects[i].transform.position ||
+			gameObjects[i].transform.currentScale != gameObjects[i].transform.scale) {
+				var mat = glm.mat4.create();
+				var rot = glm.quat.create();
+				glm.quat.fromEuler(rot,
+					gameObjects[i].transform.rotation[0],
+					gameObjects[i].transform.rotation[1],
+					gameObjects[i].transform.rotation[2]		
+				)
+				glm.mat4.fromRotationTranslationScale(
+					mat,rot,
+					glm.vec3.fromValues(
+						gameObjects[i].transform.position[0],
+						gameObjects[i].transform.position[1],
+						gameObjects[i].transform.position[2]			
+					),
+					glm.vec3.fromValues(
+						gameObjects[i].transform.scale[0],
+						gameObjects[i].transform.scale[1],
+						gameObjects[i].transform.scale[2]
+					)
+				);
+				models[i].pos = transform(models[i].pos,mat);
+				gameObjects[i].transform.currentRot = gameObjects[i].transform.rotation;
+				gameObjects[i].transform.currentPos = gameObjects[i].transform.position;
+				gameObjects[i].transform.currentScale = gameObjects[i].transform.scale
+			}
+		
+	}
 
 	modelsMeta = [];
 	for(var i = 0;i<models.length;++i){
@@ -243,6 +275,12 @@ async function render(){
 			idxBuf: await createBuffer(models[i].idx, GPUBufferUsage.INDEX)
 		});
 	}
+}
+
+async function render(){
+	var now = Date.now() / 1000;
+
+	await updatePositionBuffers();
 
 	colorTex = context.getCurrentTexture();
 	colorTexView = colorTex.createView();
@@ -294,7 +332,7 @@ async function render(){
 	glm.mat4.perspectiveZO(projectionMatrix, 2, canvas.clientWidth/canvas.clientHeight, 0.01, 10000.0);
 
 	var viewMatrix = glm.mat4.create();
-	glm.mat4.translate(viewMatrix, viewMatrix, glm.vec3.fromValues(0, 0, -5));
+	glm.mat4.translate(viewMatrix, viewMatrix, glm.vec3.fromValues(0, -1, -5));
 	glm.mat4.rotate(viewMatrix,viewMatrix,now,glm.vec3.fromValues(0,5,0));
     var modelViewProjectionMatrix = glm.mat4.create();
     glm.mat4.multiply(modelViewProjectionMatrix, projectionMatrix, viewMatrix);
