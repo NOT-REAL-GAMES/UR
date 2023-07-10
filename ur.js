@@ -107,19 +107,9 @@ function rotate(pos,off,origin){
 	var vec = new Array(Math.floor(pos.length/3));
 	for(var i = 0; i<pos.length;i+=3){
 		vec[Math.floor(i/3)] = glm.vec3.fromValues(pos[i],pos[i+1],pos[i+2]);
-		console.log("0: "+vec[Math.floor(i/3)]);
-
-
-		console.log(off);
-		console.log(origin);
 		glm.vec3.rotateX(vec[Math.floor(i/3)],vec[Math.floor(i/3)],origin,off[0]*0.01745);		
-		console.log("1: "+vec[Math.floor(i/3)]);
-
 		glm.vec3.rotateY(vec[Math.floor(i/3)],vec[Math.floor(i/3)],origin,off[1]*0.01745);
-		console.log("2: "+vec[Math.floor(i/3)]);
-
 		glm.vec3.rotateZ(vec[Math.floor(i/3)],vec[Math.floor(i/3)],origin,off[2]*0.01745);
-		console.log("3: "+vec[Math.floor(i/3)]);
 	}
 	
 	var arr = new Array(pos.length);
@@ -283,7 +273,14 @@ async function ur(){
 
 	await initializeScene();
 
-	ogModels = models;
+	ogModels = new Array(models.length);
+	for(var i = 0;i<models.length;++i){
+		ogModels[i]= {
+			pos: models[i].pos.slice(),
+			col: models[i].col.slice(),
+			idx: models[i].idx.slice(),
+		}
+	}
 
 	await createPipeline();
 
@@ -315,73 +312,73 @@ async function updatePositionBuffers(){
 
 		if(true) {
 
-				models[i].pos = ogModels[i].pos;
+				models[i].pos = ogModels[i].pos.slice();
 				//console.log(models[i].pos === ogModels[i].pos);
 
 				var mat = glm.mat4.create();
 				var rot = glm.quat.create();
 				var pos = glm.vec3.create();
 				var scl = 1;
-				if(posCheck){
+				//if(posCheck){
 					pos = glm.vec3.fromValues(
-						tf.position[0] - tf.currentPos[0],
-						tf.position[1] - tf.currentPos[1],
-						tf.position[2] - tf.currentPos[2]			
+						tf.position[0],
+						tf.position[1],
+						tf.position[2]			
 					);					
-				}
-				if (rotCheck){
+				//}
+				//if (rotCheck){
 					glm.quat.fromEuler(rot,
-						tf.rotation[0] - tf.currentRot[0],
-						tf.rotation[1] - tf.currentRot[1],
-						tf.rotation[2] - tf.currentRot[2],"xyz"
+						tf.rotation[0],
+						tf.rotation[1],
+						tf.rotation[2],"xyz"
 					)
-				}
+				//}
 				
 				
 
-				if(sclCheck){scl = 1 + tf.scale[0] - tf.currentScale[0]}
+				//if(sclCheck){
+					scl = 1 + tf.scale[0]
+				//}
 
-				if(sclCheck){models[i].pos = scale(ogModels[i].pos,scl);}
+				//if(sclCheck){
+					models[i].pos = scale(models[i].pos,scl);
+				//}
 
-				if(posCheck){
+				//if(posCheck){
 					models[i].pos = move(models[i].pos,pos);
-				}
+				//}
 				var origin = glm.vec3.fromValues(
 					tf.position[0],
 					tf.position[1],
 					tf.position[2]
 				)
-				if(rotCheck){
+				//if(rotCheck){
 					models[i].pos = rotate(models[i].pos,
 						glm.vec3.fromValues(
-							tf.rotation[0] - tf.currentRot[0],
-							tf.rotation[1] - tf.currentRot[1],
-							tf.rotation[2] - tf.currentRot[2],
+							tf.rotation[0],
+							tf.rotation[1],
+							tf.rotation[2],
 						),origin
 					);
-				}
+				//}
 
-				if (rotCheck){
+				//if (rotCheck){
 					tf.currentRot = [
 						tf.rotation[0],
 						tf.rotation[1],
 						tf.rotation[2]
 					];
-				}
-				if(posCheck){
+				//}
+				//if(posCheck){
 					tf.currentPos = [
 						tf.position[0],
 						tf.position[1],
 						tf.position[2]
 					];
-				}
-				if(sclCheck){
-					tf.currentScale = [
-						tf.scale[0],
-						tf.scale[1],
-						tf.scale[2]
-					];
-				}
+				//}
+				//if(sclCheck){
+					tf.currentScale = 1 + tf.scale[0];
+				//}
 					
 				
 
@@ -509,7 +506,7 @@ async function gameCode(){
 	gameObjects[0].transform.rotation[1] += Math.cos(now)*5;
 	gameObjects[0].transform.rotation[0] += Math.sin(now)*10;
 	gameObjects[0].transform.position[0] = Math.sin(now)*5;
-	gameObjects[0].transform.scale[0] = 1+Math.sin(now)*.5;
+	gameObjects[0].transform.scale[0] = 1+Math.sin(now)*1.5;
 
 }
 
