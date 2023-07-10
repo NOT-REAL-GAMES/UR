@@ -38,6 +38,8 @@ var now;
 var url = window.location.href;
 
 async function init(){
+	now = Date.now();
+
 	canvas = document.querySelector("#ur");
 	adapter = await navigator.gpu.requestAdapter();
 	device = await adapter.requestDevice({
@@ -293,21 +295,6 @@ async function updatePositionBuffers(){
 
 		var tf = gameObjects[i].transform;
 		
-		var rotCheck = 
-			Math.abs(tf.currentRot[0] - tf.rotation[0]) > glm.glMatrix.EPSILON ||
-			Math.abs(tf.currentRot[1] - tf.rotation[1]) > glm.glMatrix.EPSILON ||
-			Math.abs(tf.currentRot[2] - tf.rotation[2]) > glm.glMatrix.EPSILON;
-
-		var posCheck = 
-			Math.abs(tf.currentPos[0] - tf.position[0]) > glm.glMatrix.EPSILON ||
-			Math.abs(tf.currentPos[1] - tf.position[1]) > glm.glMatrix.EPSILON ||
-			Math.abs(tf.currentPos[2] - tf.position[2]) > glm.glMatrix.EPSILON ;
-
-		var sclCheck = 
-			Math.abs(tf.currentScale[0] - tf.scale[0]) > glm.glMatrix.EPSILON ||
-			Math.abs(tf.currentScale[1] - tf.scale[1]) > glm.glMatrix.EPSILON ||
-			Math.abs(tf.currentScale[2] - tf.scale[2]) > glm.glMatrix.EPSILON;
-
 		//console.log("object is "+(rotCheck||posCheck||sclCheck?"transforming":"not transforming"));
 
 		if(true) {
@@ -328,9 +315,9 @@ async function updatePositionBuffers(){
 				//}
 				//if (rotCheck){
 					glm.quat.fromEuler(rot,
-						tf.rotation[0],
-						tf.rotation[1],
-						tf.rotation[2],"xyz"
+						tf.rotation[0]%360,
+						tf.rotation[1]%360,
+						tf.rotation[2]%360,"xyz"
 					)
 				//}
 				
@@ -413,7 +400,6 @@ async function updatePositionBuffers(){
 }
 
 async function render(){
-	now = Date.now() / 1000;
 
 	await gameCode();
 
@@ -498,15 +484,74 @@ async function render(){
 	await device.queue.submit([encoder.finish()]);
 
 	requestAnimationFrame(render);
-	
+
+	deltaTime = Date.now() / 1000 - now;
+	//console.log(deltaTime);
+
+	now = Date.now() / 1000;	
+}
+
+var deltaTime = 0;
+
+var held = {};
+
+//TODO: figure out a way to automate the held 
+async function input(){
+	document.onkeydown = (event) =>{
+		  const keyName = event.key;
+	  
+		if (keyName === "Control") {
+			return;
+		}
+		
+		if (event.ctrlKey) {
+			alert(`Combination of ctrlKey + ${keyName}`);
+			} else {
+				held.push({
+					key:   keyName,
+					value: false
+				});
+			}	  
+		};
+		
+		document.onkeyup = (event) =>{
+			const keyName = event.key;
+		
+		  if (keyName === "Control") {
+			  return;
+		  }
+		  
+		  if (event.ctrlKey) {
+
+			alert(`Combination of ctrlKey + ${keyName}`);
+			} else {
+				held.push({
+					key:   keyName,
+					value: false
+				});
+			  }	  
+		  };
+
 }
 
 async function gameCode(){
+		
+	setInterval(input,10);
 
-	gameObjects[0].transform.rotation[1] += Math.cos(now)*5;
-	gameObjects[0].transform.rotation[0] += Math.sin(now)*10;
-	gameObjects[0].transform.position[0] = Math.sin(now)*5;
-	gameObjects[0].transform.scale[0] = 1+Math.sin(now)*1.5;
+	gameObjects[1].transform.rotation[1] = (now);
+
+	if (held.a) {
+		gameObjects[0].transform.position[0] -= 5 * deltaTime
+	}
+	if (held.d) {
+		gameObjects[0].transform.position[0] += 5 * deltaTime
+	}
+	if (held.w) {
+		gameObjects[0].transform.position[2] -= 5 * deltaTime
+	}
+	if (held.s) {
+		gameObjects[0].transform.position[2] += 5 * deltaTime
+	}
 
 }
 
