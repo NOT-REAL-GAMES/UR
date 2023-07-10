@@ -17,6 +17,7 @@ var depthTex;
 var depthTexView;
 
 var models = [];
+var ogModels = [];
 var modelsMeta = [];
 
 var gameObjects = [];
@@ -32,6 +33,7 @@ var renderPassDesc;
 
 var projectionMatrix = glm.mat4.create();
 
+var now;
 
 var url = window.location.href;
 
@@ -72,6 +74,23 @@ function transform(pos,rot){
 	for(var i = 0; i<pos.length;i+=3){
 		vec[Math.floor(i/3)] = glm.vec3.fromValues(pos[i],pos[i+1],pos[i+2]);
 		glm.vec3.transformMat4(vec[Math.floor(i/3)],vec[Math.floor(i/3)],rot);
+	}
+	
+	var arr = new Array(pos.length);
+	for(var i=0; i<arr.length;i+=3){
+		arr[i] = vec[Math.floor(i/3)][0];
+		arr[i+1] = vec[Math.floor(i/3)][1];
+		arr[i+2] = vec[Math.floor(i/3)][2];
+	}
+	//console.log(arr);
+	return arr;
+}
+
+function move(pos,off){
+	var vec = new Array(Math.floor(pos.length/3));
+	for(var i = 0; i<pos.length;i+=3){
+		vec[Math.floor(i/3)] = glm.vec3.fromValues(pos[i],pos[i+1],pos[i+2]);
+		glm.vec3.add(vec[Math.floor(i/3)],vec[Math.floor(i/3)],off);
 	}
 	
 	var arr = new Array(pos.length);
@@ -150,7 +169,7 @@ async function createPipeline(){
 		},
 		primitive: {
 			frontFace: 'cw',
-			cullMode: 'none',
+			cullMode: 'back',
 			topology: 'triangle-list'
 		},
 		depthStencil: {
@@ -208,10 +227,6 @@ async function initializeScene(){
 			})
 		}
 	}
-
-	//await fetch('./src/cube.json').then((response) => response.json()).then((json) => {mdl = json;});	
-	//await fetch('./src/floor.json').then((response) => response.json()).then((json) => {mdl2 = json;});	
-
 }
 
 async function ur(){
@@ -222,6 +237,7 @@ async function ur(){
 
 	await initializeScene();
 
+	ogModels = models;
 
 	await createPipeline();
 
@@ -230,41 +246,94 @@ async function ur(){
 
 async function updatePositionBuffers(){
 
-	var rotation = glm.mat4.create();
-	glm.mat4.fromRotation(rotation,0.01,glm.vec3.fromValues(1,1,0));
-	models[0].pos = transform(models[0].pos,rotation);
-
 	for(var i = 0;i<models.length;++i){
+
+		var tf = gameObjects[i].transform;
 		
-		if(gameObjects[i].transform.currentRot != gameObjects[i].transform.rotation ||
-			gameObjects[i].transform.currentPos != gameObjects[i].transform.position ||
-			gameObjects[i].transform.currentScale != gameObjects[i].transform.scale) {
+		var rotCheck = 
+			Math.abs(tf.currentRot[0] - tf.rotation[0]) > glm.glMatrix.EPSILON ||
+			Math.abs(tf.currentRot[1] - tf.rotation[1]) > glm.glMatrix.EPSILON ||
+			Math.abs(tf.currentRot[2] - tf.rotation[2]) > glm.glMatrix.EPSILON;
+
+		var posCheck = 
+			Math.abs(tf.currentPos[0] - tf.position[0]) > glm.glMatrix.EPSILON ||
+			Math.abs(tf.currentPos[1] - tf.position[1]) > glm.glMatrix.EPSILON ||
+			Math.abs(tf.currentPos[2] - tf.position[2]) > glm.glMatrix.EPSILON ;
+
+		var sclCheck = 
+			Math.abs(tf.currentScale[0] - tf.scale[0]) > glm.glMatrix.EPSILON ||
+			Math.abs(tf.currentScale[1] - tf.scale[1]) > glm.glMatrix.EPSILON ||
+			Math.abs(tf.currentScale[2] - tf.scale[2]) > glm.glMatrix.EPSILON;
+
+		console.log("object is "+(rotCheck||posCheck||sclCheck?"moving":"not moving"));
+
+		if(true) {
+
+				models[i].pos = ogModels[i].pos;
+				console.log(models[i].pos === ogModels[i].pos);
+
 				var mat = glm.mat4.create();
 				var rot = glm.quat.create();
-				glm.quat.fromEuler(rot,
-					gameObjects[i].transform.rotation[0],
-					gameObjects[i].transform.rotation[1],
-					gameObjects[i].transform.rotation[2]		
-				)
-				glm.mat4.fromRotationTranslationScale(
-					mat,rot,
-					glm.vec3.fromValues(
-						gameObjects[i].transform.position[0],
-						gameObjects[i].transform.position[1],
-						gameObjects[i].transform.position[2]			
-					),
-					glm.vec3.fromValues(
-						gameObjects[i].transform.scale[0],
-						gameObjects[i].transform.scale[1],
-						gameObjects[i].transform.scale[2]
+				var pos = glm.vec3.create();
+				var scl = glm.vec3.create();
+				if(posCheck){
+					pos = glm.vec3.fromValues(
+						tf.position[0] - tf.currentPos[0],
+						tf.position[1] - tf.currentPos[1],
+						tf.position[2] - tf.currentPos[2]			
+					);					
+				}
+				if (rotCheck){
+					glm.quat.fromEuler(rot,
+						tf.rotation[0] - tf.currentRot[0],
+						tf.rotation[1] - tf.currentRot[1],
+						tf.rotation[2] - tf.currentRot[2],"xyz"
 					)
+				}
+				if(sclCheck){scl = glm.vec3.fromValues(
+					tf.scale[0],
+					tf.scale[1],
+					tf.scale[2]
+				);}
+				else{ scl = glm.vec3.fromValues(1,1,1);}
+
+				var origin = glm.vec3.fromValues(
+					tf.position[0],
+					tf.position[1],
+					tf.position[2]	
+				)
+
+				glm.mat4.fromRotationTranslationScaleOrigin(
+					mat,rot,glm.vec3.fromValues(0,0,0),scl,origin
 				);
+
+				models[i].pos = move(models[i].pos,pos);
+
 				models[i].pos = transform(models[i].pos,mat);
-				gameObjects[i].transform.currentRot = gameObjects[i].transform.rotation;
-				gameObjects[i].transform.currentPos = gameObjects[i].transform.position;
-				gameObjects[i].transform.currentScale = gameObjects[i].transform.scale
+				
+				if (rotCheck){
+					tf.currentRot = [
+						tf.rotation[0],
+						tf.rotation[1],
+						tf.rotation[2]
+					];
+				}
+				if(posCheck){
+					tf.currentPos = [
+						tf.position[0],
+						tf.position[1],
+						tf.position[2]
+					];
+				}
+				if(sclCheck){
+					tf.currentScale = [
+						tf.scale[0],
+						tf.scale[1],
+						tf.scale[2]
+					];
+				}
+	
 			}
-		
 	}
 
 	modelsMeta = [];
@@ -278,7 +347,9 @@ async function updatePositionBuffers(){
 }
 
 async function render(){
-	var now = Date.now() / 1000;
+	now = Date.now() / 1000;
+
+	await gameCode();
 
 	await updatePositionBuffers();
 
@@ -332,8 +403,8 @@ async function render(){
 	glm.mat4.perspectiveZO(projectionMatrix, 2, canvas.clientWidth/canvas.clientHeight, 0.01, 10000.0);
 
 	var viewMatrix = glm.mat4.create();
-	glm.mat4.translate(viewMatrix, viewMatrix, glm.vec3.fromValues(0, -1, -5));
-	glm.mat4.rotate(viewMatrix,viewMatrix,now,glm.vec3.fromValues(0,5,0));
+	glm.mat4.translate(viewMatrix, viewMatrix, glm.vec3.fromValues(0, -1, -20));
+	//glm.mat4.rotate(viewMatrix,viewMatrix,now,glm.vec3.fromValues(0,5,0));
     var modelViewProjectionMatrix = glm.mat4.create();
     glm.mat4.multiply(modelViewProjectionMatrix, projectionMatrix, viewMatrix);
 
@@ -363,5 +434,13 @@ async function render(){
 	requestAnimationFrame(render);
 	
 }
+
+async function gameCode(){
+
+	gameObjects[0].transform.rotation[1] = now*360;
+	gameObjects[0].transform.position[0] = Math.sin(now)*5;
+
+}
+
 
 ur();
