@@ -473,6 +473,7 @@ async function render(){
 	//glm.mat4.rotate(viewMatrix,viewMatrix,now,glm.vec3.fromValues(0,5,0));
     var modelViewProjectionMatrix = glm.mat4.create();
     glm.mat4.multiply(modelViewProjectionMatrix, projectionMatrix, viewMatrix);
+	var 
 
 	encoder = device.createCommandEncoder();
 	const pass = encoder.beginRenderPass(renderPassDesc);
