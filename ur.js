@@ -103,6 +103,35 @@ function move(pos,off){
 	return arr;
 }
 
+function rotate(pos,off,origin){
+	var vec = new Array(Math.floor(pos.length/3));
+	for(var i = 0; i<pos.length;i+=3){
+		vec[Math.floor(i/3)] = glm.vec3.fromValues(pos[i],pos[i+1],pos[i+2]);
+		console.log("0: "+vec[Math.floor(i/3)]);
+
+
+		console.log(off);
+		console.log(origin);
+		glm.vec3.rotateX(vec[Math.floor(i/3)],vec[Math.floor(i/3)],origin,off[0]*0.01745);		
+		console.log("1: "+vec[Math.floor(i/3)]);
+
+		glm.vec3.rotateY(vec[Math.floor(i/3)],vec[Math.floor(i/3)],origin,off[1]*0.01745);
+		console.log("2: "+vec[Math.floor(i/3)]);
+
+		glm.vec3.rotateZ(vec[Math.floor(i/3)],vec[Math.floor(i/3)],origin,off[2]*0.01745);
+		console.log("3: "+vec[Math.floor(i/3)]);
+	}
+	
+	var arr = new Array(pos.length);
+	for(var i=0; i<arr.length;i+=3){
+		arr[i] = vec[Math.floor(i/3)][0];
+		arr[i+1] = vec[Math.floor(i/3)][1];
+		arr[i+2] = vec[Math.floor(i/3)][2];
+	}
+	//console.log(arr);
+	return arr;
+}
+
 function scale(pos,scale){
 	var vec = new Array(Math.floor(pos.length/3));
 	for(var i = 0; i<pos.length;i+=3){
@@ -282,12 +311,12 @@ async function updatePositionBuffers(){
 			Math.abs(tf.currentScale[1] - tf.scale[1]) > glm.glMatrix.EPSILON ||
 			Math.abs(tf.currentScale[2] - tf.scale[2]) > glm.glMatrix.EPSILON;
 
-		console.log("object is "+(rotCheck||posCheck||sclCheck?"transforming":"not transforming"));
+		//console.log("object is "+(rotCheck||posCheck||sclCheck?"transforming":"not transforming"));
 
 		if(true) {
 
 				models[i].pos = ogModels[i].pos;
-				console.log(models[i].pos === ogModels[i].pos);
+				//console.log(models[i].pos === ogModels[i].pos);
 
 				var mat = glm.mat4.create();
 				var rot = glm.quat.create();
@@ -307,27 +336,30 @@ async function updatePositionBuffers(){
 						tf.rotation[2] - tf.currentRot[2],"xyz"
 					)
 				}
+				
+				
+
 				if(sclCheck){scl = 1 + tf.scale[0] - tf.currentScale[0]}
 
+				if(sclCheck){models[i].pos = scale(ogModels[i].pos,scl);}
+
+				if(posCheck){
+					models[i].pos = move(models[i].pos,pos);
+				}
 				var origin = glm.vec3.fromValues(
 					tf.position[0],
 					tf.position[1],
-					tf.position[2]	
+					tf.position[2]
 				)
-
-				glm.mat4.fromRotationTranslationScaleOrigin(
-					mat,rot,glm.vec3.fromValues(0,0,0),
-					glm.vec3.fromValues(1,1,1),origin
-				);
-
-
-				models[i].pos = move(models[i].pos,pos);
-
-
-				models[i].pos = transform(models[i].pos,mat);
-								
-				models[i].pos = scale(models[i].pos,scl);
-
+				if(rotCheck){
+					models[i].pos = rotate(models[i].pos,
+						glm.vec3.fromValues(
+							tf.rotation[0] - tf.currentRot[0],
+							tf.rotation[1] - tf.currentRot[1],
+							tf.rotation[2] - tf.currentRot[2],
+						),origin
+					);
+				}
 
 				if (rotCheck){
 					tf.currentRot = [
@@ -350,7 +382,26 @@ async function updatePositionBuffers(){
 						tf.scale[2]
 					];
 				}
-	
+					
+				
+
+				glm.mat4.fromQuat(mat,rot);
+
+				//for(var j;j<models[i].pos.length;j+=3){
+				//	models[i].pos[j] += pos[0];
+				//	models[i].pos[j+1] += pos[1];
+				//	models[i].pos[j+2] += pos[2];
+				//}
+
+				//glm.mat4.fromRotationTranslationScale(
+				//	mat,rot,glm.vec3.fromValues(0,0,0),
+				//	glm.vec3.fromValues(1,1,1),origin
+				//);
+
+				
+				//console.log(models[i].pos);
+
+
 			}
 	}
 
@@ -460,9 +511,6 @@ async function gameCode(){
 	gameObjects[0].transform.position[0] = Math.sin(now)*5;
 	gameObjects[0].transform.scale[0] = 1+Math.sin(now)*.5;
 
-
-
 }
-
 
 ur();
