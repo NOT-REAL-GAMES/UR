@@ -103,6 +103,23 @@ function move(pos,off){
 	return arr;
 }
 
+function scale(pos,scale){
+	var vec = new Array(Math.floor(pos.length/3));
+	for(var i = 0; i<pos.length;i+=3){
+		vec[Math.floor(i/3)] = glm.vec3.fromValues(pos[i],pos[i+1],pos[i+2]);
+		glm.vec3.scale(vec[Math.floor(i/3)],vec[Math.floor(i/3)],scale);
+	}
+	
+	var arr = new Array(pos.length);
+	for(var i=0; i<arr.length;i+=3){
+		arr[i] = vec[Math.floor(i/3)][0];
+		arr[i+1] = vec[Math.floor(i/3)][1];
+		arr[i+2] = vec[Math.floor(i/3)][2];
+	}
+	//console.log(arr);
+	return arr;
+}
+
 async function createPipeline(){	
 	const depthTexDesc = {
 		size: [canvas.width, canvas.height, 1],
@@ -265,7 +282,7 @@ async function updatePositionBuffers(){
 			Math.abs(tf.currentScale[1] - tf.scale[1]) > glm.glMatrix.EPSILON ||
 			Math.abs(tf.currentScale[2] - tf.scale[2]) > glm.glMatrix.EPSILON;
 
-		console.log("object is "+(rotCheck||posCheck||sclCheck?"moving":"not moving"));
+		console.log("object is "+(rotCheck||posCheck||sclCheck?"transforming":"not transforming"));
 
 		if(true) {
 
@@ -275,7 +292,7 @@ async function updatePositionBuffers(){
 				var mat = glm.mat4.create();
 				var rot = glm.quat.create();
 				var pos = glm.vec3.create();
-				var scl = glm.vec3.create();
+				var scl = 1;
 				if(posCheck){
 					pos = glm.vec3.fromValues(
 						tf.position[0] - tf.currentPos[0],
@@ -290,12 +307,7 @@ async function updatePositionBuffers(){
 						tf.rotation[2] - tf.currentRot[2],"xyz"
 					)
 				}
-				if(sclCheck){scl = glm.vec3.fromValues(
-					tf.scale[0],
-					tf.scale[1],
-					tf.scale[2]
-				);}
-				else{ scl = glm.vec3.fromValues(1,1,1);}
+				if(sclCheck){scl = 1 + tf.scale[0] - tf.currentScale[0]}
 
 				var origin = glm.vec3.fromValues(
 					tf.position[0],
@@ -304,13 +316,19 @@ async function updatePositionBuffers(){
 				)
 
 				glm.mat4.fromRotationTranslationScaleOrigin(
-					mat,rot,glm.vec3.fromValues(0,0,0),scl,origin
+					mat,rot,glm.vec3.fromValues(0,0,0),
+					glm.vec3.fromValues(1,1,1),origin
 				);
+
 
 				models[i].pos = move(models[i].pos,pos);
 
+
 				models[i].pos = transform(models[i].pos,mat);
-				
+								
+				models[i].pos = scale(models[i].pos,scl);
+
+
 				if (rotCheck){
 					tf.currentRot = [
 						tf.rotation[0],
@@ -437,8 +455,12 @@ async function render(){
 
 async function gameCode(){
 
-	gameObjects[0].transform.rotation[1] = now*360;
+	gameObjects[0].transform.rotation[1] += Math.cos(now)*5;
+	gameObjects[0].transform.rotation[0] += Math.sin(now)*10;
 	gameObjects[0].transform.position[0] = Math.sin(now)*5;
+	gameObjects[0].transform.scale[0] = 1+Math.sin(now)*.5;
+
+
 
 }
 

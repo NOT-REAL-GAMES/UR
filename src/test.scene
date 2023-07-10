@@ -6,7 +6,7 @@
 			"position": [0,0,0],
 			"currentRot": [0,0,0],
 			"rotation": [0,0,0],
-			"currentScale": [1,1,1],
+			"currentScale": [0,0,0],
 			"scale": [2,1,1]
 		},
 		"components":{
