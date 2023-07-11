@@ -298,7 +298,6 @@ async function updatePositionBuffers(){
 				var scl = 1;
 
 				pos = glm.vec3.fromValues(tf.position[0],tf.position[1],tf.position[2]);					
-				glm.quat.fromEuler(rot,tf.rotation[0]%360,tf.rotation[1]%360,tf.rotation[2]%360,"xyz");
 								
 				scl = 1 + tf.scale[0];
 
@@ -309,7 +308,7 @@ async function updatePositionBuffers(){
 				var origin = glm.vec3.fromValues(tf.position[0],tf.position[1],tf.position[2]);
 
 				models[i].pos = rotate(models[i].pos,glm.vec3.fromValues(
-					tf.rotation[0],tf.rotation[1],tf.rotation[2],),origin);
+					tf.rotation[0]%360,tf.rotation[1]%360,tf.rotation[2]%360),origin);
 
 				glm.mat4.fromQuat(mat,rot);
 
