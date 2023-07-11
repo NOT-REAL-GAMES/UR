@@ -420,7 +420,7 @@ async function render(){
 
 var deltaTime = 0;
 
-var held = {};
+var held = new Map([]);
 
 //TODO: figure out a way to automate the held 
 async function input(){
@@ -434,10 +434,8 @@ async function input(){
 		if (event.ctrlKey) {
 			alert(`Combination of ctrlKey + ${keyName}`);
 			} else {
-				held.push({
-					key: keyName,
-					value: false
-				});
+				held.set(keyName,true);
+				console.log(held.get(keyName));
 			}	  
 		};
 		
@@ -452,10 +450,8 @@ async function input(){
 
 			alert(`Combination of ctrlKey + ${keyName}`);
 			} else {
-				held.push({
-					key: keyName,
-					value: false
-				});
+				held.set(keyName,false);
+				console.log(held.get(keyName));
 			  }	  
 		  };
 
@@ -467,16 +463,16 @@ async function gameCode(){
 
 	gameObjects[1].transform.rotation[1] = (now);
 
-	if (held.a) {
+	if (held.get("a")) {
 		gameObjects[0].transform.position[0] -= 5 * deltaTime
 	}
-	if (held.d) {
+	if (held.get("d")) {
 		gameObjects[0].transform.position[0] += 5 * deltaTime
 	}
-	if (held.w) {
+	if (held.get("w")) {
 		gameObjects[0].transform.position[2] -= 5 * deltaTime
 	}
-	if (held.s) {
+	if (held.get("s")) {
 		gameObjects[0].transform.position[2] += 5 * deltaTime
 	}
 
