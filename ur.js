@@ -1,20 +1,10 @@
 import * as glm from './src/glm/index.js';
 
-var canvas;
-var adapter;
-var device;
+var canvas; var adapter; var device;
+var queue; var context; var pipeline;
 
-var queue;
-
-var context;
-
-var pipeline;
-
-var colorTex;
-var colorTexView;
-
-var depthTex;
-var depthTexView;
+var colorTex; var colorTexView;
+var depthTex; var depthTexView;
 
 var models = [];
 var ogModels = [];
@@ -306,85 +296,22 @@ async function updatePositionBuffers(){
 				var rot = glm.quat.create();
 				var pos = glm.vec3.create();
 				var scl = 1;
-				//if(posCheck){
-					pos = glm.vec3.fromValues(
-						tf.position[0],
-						tf.position[1],
-						tf.position[2]			
-					);					
-				//}
-				//if (rotCheck){
-					glm.quat.fromEuler(rot,
-						tf.rotation[0]%360,
-						tf.rotation[1]%360,
-						tf.rotation[2]%360,"xyz"
-					)
-				//}
+
+				pos = glm.vec3.fromValues(tf.position[0],tf.position[1],tf.position[2]);					
+				glm.quat.fromEuler(rot,tf.rotation[0]%360,tf.rotation[1]%360,tf.rotation[2]%360,"xyz");
+								
+				scl = 1 + tf.scale[0];
+
+				models[i].pos = scale(models[i].pos,scl);
+								
+				models[i].pos = move(models[i].pos,pos);
 				
-				
+				var origin = glm.vec3.fromValues(tf.position[0],tf.position[1],tf.position[2]);
 
-				//if(sclCheck){
-					scl = 1 + tf.scale[0]
-				//}
-
-				//if(sclCheck){
-					models[i].pos = scale(models[i].pos,scl);
-				//}
-
-				//if(posCheck){
-					models[i].pos = move(models[i].pos,pos);
-				//}
-				var origin = glm.vec3.fromValues(
-					tf.position[0],
-					tf.position[1],
-					tf.position[2]
-				)
-				//if(rotCheck){
-					models[i].pos = rotate(models[i].pos,
-						glm.vec3.fromValues(
-							tf.rotation[0],
-							tf.rotation[1],
-							tf.rotation[2],
-						),origin
-					);
-				//}
-
-				//if (rotCheck){
-					tf.currentRot = [
-						tf.rotation[0],
-						tf.rotation[1],
-						tf.rotation[2]
-					];
-				//}
-				//if(posCheck){
-					tf.currentPos = [
-						tf.position[0],
-						tf.position[1],
-						tf.position[2]
-					];
-				//}
-				//if(sclCheck){
-					tf.currentScale = 1 + tf.scale[0];
-				//}
-					
-				
+				models[i].pos = rotate(models[i].pos,glm.vec3.fromValues(
+					tf.rotation[0],tf.rotation[1],tf.rotation[2],),origin);
 
 				glm.mat4.fromQuat(mat,rot);
-
-				//for(var j;j<models[i].pos.length;j+=3){
-				//	models[i].pos[j] += pos[0];
-				//	models[i].pos[j+1] += pos[1];
-				//	models[i].pos[j+2] += pos[2];
-				//}
-
-				//glm.mat4.fromRotationTranslationScale(
-				//	mat,rot,glm.vec3.fromValues(0,0,0),
-				//	glm.vec3.fromValues(1,1,1),origin
-				//);
-
-				
-				//console.log(models[i].pos);
-
 
 			}
 	}
@@ -508,7 +435,7 @@ async function input(){
 			alert(`Combination of ctrlKey + ${keyName}`);
 			} else {
 				held.push({
-					key:   keyName,
+					key: keyName,
 					value: false
 				});
 			}	  
@@ -526,7 +453,7 @@ async function input(){
 			alert(`Combination of ctrlKey + ${keyName}`);
 			} else {
 				held.push({
-					key:   keyName,
+					key: keyName,
 					value: false
 				});
 			  }	  
