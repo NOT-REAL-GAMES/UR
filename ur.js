@@ -357,29 +357,6 @@ async function updatePositionBuffers(){
 var cubeTexture;
 var imageBitmap;
 
-async function loadTextures(){
-	const response = await fetch(
-		new URL('./src/Di-3d.png', import.meta.url).toString()
-	  );
-	imageBitmap = await createImageBitmap(await response.blob());
-  
-	cubeTexture = device.createTexture({
-		size: [imageBitmap.width, imageBitmap.height, 1],
-		format: 'rgba8unorm',
-		usage:
-		  GPUTextureUsage.TEXTURE_BINDING |
-		  GPUTextureUsage.COPY_DST |
-		  GPUTextureUsage.RENDER_ATTACHMENT,
-	});
-	  
-	device.queue.copyExternalImageToTexture(
-		{ source: imageBitmap },
-		{ texture: cubeTexture },
-		[imageBitmap.width, imageBitmap.height]
-	);
-	  
-}
-
 var colorAttachment;
 
 var camPos = [0,0,0];
@@ -422,8 +399,6 @@ async function render(){
 		stencilLoadOp: 'clear',
 		stencilStoreOp: 'store'
 	}
-
-	await loadTextures();
 
 	colorAttachment.view = context.getCurrentTexture().createView();
 
