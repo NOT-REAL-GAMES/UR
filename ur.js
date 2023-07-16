@@ -345,10 +345,62 @@ async function updatePositionBuffers(){
 
 	modelsMeta = [];
 	for(var i = 0;i<models.length;++i){
+		var newpos = Array();
+		var newcol = Array();
+		var newidx = Array();
+		for(var j=0;j<models[i].idx.length;){
+
+			console.log("triangle"+j/3);
+
+			console.log(models[i].idx[j]);
+
+			var cur = models[i].idx[j];
+
+			newpos.push(models[i].pos[cur*3])
+			newpos.push(models[i].pos[(cur*3)+1])
+			newpos.push(models[i].pos[(cur*3)+2])
+
+			newcol.push(models[i].col[cur*3])
+			newcol.push(models[i].col[cur*3+1])
+			newcol.push(models[i].col[cur*3+2])
+			
+
+			newidx.push(j);
+			++j;
+			console.log(models[i].idx[j]);
+
+			cur = models[i].idx[j];
+
+			newpos.push(models[i].pos[cur*3])
+			newpos.push(models[i].pos[(cur*3)+1])
+			newpos.push(models[i].pos[(cur*3)+2])
+
+			newcol.push(models[i].col[cur*3])
+			newcol.push(models[i].col[cur*3+1])
+			newcol.push(models[i].col[cur*3+2])
+
+			newidx.push(j);
+			++j;
+			console.log(models[i].idx[j]);
+
+			cur = models[i].idx[j];
+
+			newpos.push(models[i].pos[cur*3])
+			newpos.push(models[i].pos[(cur*3)+1])
+			newpos.push(models[i].pos[(cur*3)+2])
+
+			newcol.push(models[i].col[cur*3])
+			newcol.push(models[i].col[cur*3+1])
+			newcol.push(models[i].col[cur*3+2])
+		
+			newidx.push(j);
+			++j;
+		}
+
 		modelsMeta.push({
-			posBuf: await createBuffer(models[i].pos, GPUBufferUsage.VERTEX),
-			colBuf: await createBuffer(models[i].col, GPUBufferUsage.VERTEX),
-			idxBuf: await createBuffer(models[i].idx, GPUBufferUsage.INDEX),
+			posBuf: await createBuffer(newpos, GPUBufferUsage.VERTEX),
+			colBuf: await createBuffer(newcol, GPUBufferUsage.VERTEX),
+			idxBuf: await createBuffer(newidx, GPUBufferUsage.INDEX),
 			uvBuf: await createBuffer(models[i].uv, GPUBufferUsage.VERTEX)
 		});
 	}
@@ -363,10 +415,10 @@ var camPos = [0,0,0];
 var camRot = [0,0,0];
 
 function createSolidColorTexture(r, g, b, a) {
-	const data = new Uint8Array([r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,
-								r * 255, g * 255, b * 255, a * 255,       0,       0,        0,    255,      0,       0,       0,     255,r * 255, g * 255, b * 255, a * 255,
-								r * 255, g * 255, b * 255, a * 255,       0,       0,        0,    255,      0,       0,       0,     255,r * 255, g * 255, b * 255, a * 255,
-								r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255]);
+	const data = new Uint8Array([     0,       0,       0,     255,     0,       0,       0,     255,r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,
+									  0,       0,       0,     255,      0,       0,       0,     255, r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,
+								r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255,      0,       0,       0,     255,      0,       0,        0,    255,
+								r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,      0,       0,        0,    255,      0,       0,        0,    255]);
 	const texture = device.createTexture({
 	  size: { width: 4, height: 4 },
 	  format: "rgba8unorm",
@@ -416,6 +468,8 @@ async function render(){
 
 	
 	const sampler = device.createSampler({
+		addressModeU: 'repeat',
+		addressModeV: 'repeat',
 		magFilter: 'nearest',
 		minFilter: 'nearest',
 	  });
@@ -476,13 +530,14 @@ async function render(){
     device.queue.writeBuffer(transformBuffer, 0, modelViewProjectionMatrix);
 
 	for(var i = 0;i<models.length;++i){
-		
+				
+		pass.setIndexBuffer(modelsMeta[i].idxBuf,'uint16');
+
 		pass.setBindGroup(0,bindGroup);
 		pass.setBindGroup(1,bindGroup2);
 		pass.setVertexBuffer(0, modelsMeta[i].posBuf);
 		pass.setVertexBuffer(1, modelsMeta[i].colBuf);
 		pass.setVertexBuffer(2, modelsMeta[i].uvBuf);
-		pass.setIndexBuffer(modelsMeta[i].idxBuf,'uint16');
 		pass.drawIndexed(models[i].idx.length,1);
 	}
 
