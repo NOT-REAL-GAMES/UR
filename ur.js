@@ -367,34 +367,6 @@ async function updatePositionBuffers(){
 
 			newidx.push(j);
 			++j;
-			console.log(models[i].idx[j]);
-
-			cur = models[i].idx[j];
-
-			newpos.push(models[i].pos[cur*3])
-			newpos.push(models[i].pos[(cur*3)+1])
-			newpos.push(models[i].pos[(cur*3)+2])
-
-			newcol.push(models[i].col[cur*3])
-			newcol.push(models[i].col[cur*3+1])
-			newcol.push(models[i].col[cur*3+2])
-
-			newidx.push(j);
-			++j;
-			console.log(models[i].idx[j]);
-
-			cur = models[i].idx[j];
-
-			newpos.push(models[i].pos[cur*3])
-			newpos.push(models[i].pos[(cur*3)+1])
-			newpos.push(models[i].pos[(cur*3)+2])
-
-			newcol.push(models[i].col[cur*3])
-			newcol.push(models[i].col[cur*3+1])
-			newcol.push(models[i].col[cur*3+2])
-		
-			newidx.push(j);
-			++j;
 		}
 
 		modelsMeta.push({
