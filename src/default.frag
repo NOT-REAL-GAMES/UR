@@ -6,5 +6,5 @@ fn main(
     @location(0) color : vec3<f32>,
     @location(1) uv : vec2<f32>) -> @location(0) vec4f {
     
-    return vec4f(color, 1) * textureSample(ourTexture, ourSampler, uv);
+    return vec4f(color, 1)/2 + textureSample(ourTexture, ourSampler, uv)/2;
 }

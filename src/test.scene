@@ -8,7 +8,13 @@
 		},
 		"components":{
 			"renderer":{
-				"modelSource": "./src/cube.json"
+				"modelSource": "./src/cube.json",
+				"materials": [{
+					"vertex": "./src/default.vert",
+					"fragment": "./src/default.frag",
+					"customVertexCode": false,
+					"customFragmentCode": false
+				}]
 			}
 		}
 	},{
@@ -20,7 +26,13 @@
 		},
 		"components":{
 			"renderer":{
-				"modelSource": "./src/floor.json"
+				"modelSource": "./src/floor.json",
+				"materials": [{
+					"vertex": "./src/default.vert",
+					"fragment": "./src/default.frag",
+					"customVertexCode": false,
+					"customFragmentCode": false
+				}]		
 			}
 		}
 	}]

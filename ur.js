@@ -1,7 +1,7 @@
 import * as glm from './src/glm/index.js';
 
 var canvas; var adapter; var device;
-var queue; var context; var pipeline;
+var queue; var context; var pipelines = [];
 
 var colorTex; var colorTexView;
 var depthTex; var depthTexView;
@@ -14,11 +14,10 @@ var gameObjects = [];
 
 var encoder;
 
-var bindGroup;
+var bindGroup = [];
 
 var transformBuffer;
-var bindGroupLayout;
-var bindGroupLayout2;
+var bindGroupLayout = [];
 
 var renderPassDesc;
 
@@ -27,6 +26,9 @@ var projectionMatrix = glm.mat4.create();
 var now;
 
 var url = window.location.href;
+
+var fModule;
+var vModule;
 
 async function init(){
 	now = Date.now();
@@ -133,6 +135,39 @@ function scale(pos,scale){
 }
 
 async function createPipeline(){	
+
+}
+
+async function createBuffer(array,usage){
+	//console.log((array.length* + 4) & ~3);
+	let mult = usage == GPUBufferUsage.VERTEX ?
+		4 : 4;
+	let desc = {
+		size: (array.length*mult) & ~3,
+		usage,
+		mappedAtCreation: true
+	};
+	let buffer = await device.createBuffer(desc);
+	//TODO: write switch case for every possible usage.
+	let bla = (buffer.getMappedRange());
+	//console.log(bla);
+	const writeArray =
+		usage == GPUBufferUsage.VERTEX
+		? new Float32Array(bla)
+		: new Uint16Array(bla);
+	writeArray.set(array,0);
+	buffer.unmap();
+	return buffer;
+}
+
+var scene;
+
+async function initializeScene(){
+	
+	await fetch('./src/test.scene').then((response) => response.json()).then((json) => {scene = json;});	
+
+	console.log(scene.gameObjects);
+
 	const depthTexDesc = {
 		size: [canvas.width, canvas.height, 1],
 		dimension: '2d',
@@ -142,15 +177,7 @@ async function createPipeline(){
 
 	depthTex = device.createTexture(depthTexDesc);
 	depthTexView = depthTex.createView();
-
-	var frag; var vert;
-
-	await fetch('./src/default.vert').then((response) => response.text()).then((shader) => {vert = shader;});	
-	await fetch('./src/default.frag').then((response) => response.text()).then((shader) => {frag = shader;});	
-
-	const vModule = device.createShaderModule({code:vert});
-	const fModule = device.createShaderModule({code:frag});
-
+	
 	const posBufDesc = {
 		attributes: [{
 			shaderLocation: 0,
@@ -198,75 +225,6 @@ async function createPipeline(){
 		texture: { type: "float" }
 	}];
 
-
-    const bindGroupLayoutDescriptor = { entries: transformBufferBindGroupLayoutEntry };
-    bindGroupLayout = device.createBindGroupLayout(bindGroupLayoutDescriptor);
-
-    const bindGroupLayoutDescriptor2 = { entries: transformBufferBindGroupLayoutEntry2 };
-    bindGroupLayout2 = device.createBindGroupLayout(bindGroupLayoutDescriptor2);
-
-
-	const pipelineLayoutDesc = {bindGroupLayouts: [bindGroupLayout,bindGroupLayout2]};
-	const layout = device.createPipelineLayout(pipelineLayoutDesc);
-
-	const colorState = {format: 'bgra8unorm'};
-	const pipelineDesc = {
-		layout: layout,
-		vertex: {
-			module: vModule,
-			entryPoint: 'main',
-			buffers: [posBufDesc,colBufDesc,uvBufDesc]
-		},
-		fragment: {
-			module: fModule,
-			entryPoint: 'main',
-			targets: [colorState]
-		},
-		primitive: {
-			frontFace: 'cw',
-			cullMode: 'back',
-			topology: 'triangle-list'
-		},
-		depthStencil: {
-			depthWriteEnabled: true,
-			depthCompare: 'less',
-			format: 'depth24plus-stencil8'
-		}
-	};
-
-	pipeline = device.createRenderPipeline(pipelineDesc);
-}
-
-async function createBuffer(array,usage){
-	//console.log((array.length* + 4) & ~3);
-	let mult = usage == GPUBufferUsage.VERTEX ?
-		4 : 4;
-	let desc = {
-		size: (array.length*mult) & ~3,
-		usage,
-		mappedAtCreation: true
-	};
-	let buffer = await device.createBuffer(desc);
-	//TODO: write switch case for every possible usage.
-	let bla = (buffer.getMappedRange());
-	//console.log(bla);
-	const writeArray =
-		usage == GPUBufferUsage.VERTEX
-		? new Float32Array(bla)
-		: new Uint16Array(bla);
-	writeArray.set(array,0);
-	buffer.unmap();
-	return buffer;
-}
-
-var scene;
-
-async function initializeScene(){
-	
-	await fetch('./src/test.scene').then((response) => response.json()).then((json) => {scene = json;});	
-
-	console.log(scene.gameObjects);
-
 	for(var i = 0;i<scene.gameObjects.length;++i){
 		if(scene.gameObjects[i].components.renderer!=null){
 			var model;
@@ -276,24 +234,68 @@ async function initializeScene(){
 			).then((response) => response.json()).then((json) => {model = json;});	
 			gameObjects.push(scene.gameObjects[i]);
 			console.log(model.uv);
+			
+
+			var vert; var frag;
+
+			const bindGroupLayoutDescriptor = { entries: transformBufferBindGroupLayoutEntry };
+			bindGroupLayout.push(device.createBindGroupLayout(bindGroupLayoutDescriptor));
+	
+			const bindGroupLayoutDescriptor2 = { entries: transformBufferBindGroupLayoutEntry2 };
+			bindGroupLayout.push(device.createBindGroupLayout(bindGroupLayoutDescriptor2));
+
+			if(!scene.gameObjects[i].components.renderer.materials[0].customVertexCode){
+				await fetch(scene.gameObjects[i].components.renderer.materials[0].vertex).then((response) => response.text()).then((shader) => {vert = shader;});	
+			}
+			if(!scene.gameObjects[i].components.renderer.materials[0].customFragmentCode){
+				await fetch(scene.gameObjects[i].components.renderer.materials[0].fragment).then((response) => response.text()).then((shader) => {frag = shader;});	
+			}
+	
+			vModule = device.createShaderModule({code:vert});
+			fModule = device.createShaderModule({code:frag});
+	
+			//initialize pipelines here?
+			//TODO: optimize pipeline creation
+
+			var pipelineLayoutDesc = {bindGroupLayouts: bindGroupLayout};
+			var layout = device.createPipelineLayout(pipelineLayoutDesc);
+		
+			const colorState = {format: 'bgra8unorm'};
+			const pipelineDesc = {
+				layout: layout,
+				vertex: {
+					module: vModule,
+					entryPoint: 'main',
+					buffers: [posBufDesc,colBufDesc,uvBufDesc]
+				},
+				fragment: {
+					module: fModule,
+					entryPoint: 'main',
+					targets: [colorState]
+				},
+				primitive: {
+					frontFace: 'cw',
+					cullMode: 'back',
+					topology: 'triangle-list'
+				},
+				depthStencil: {
+					depthWriteEnabled: true,
+					depthCompare: 'less',
+					format: 'depth24plus-stencil8'
+				}
+			};
+		
+			pipelines.push(device.createRenderPipeline(pipelineDesc));
+
 			models.push({
 				pos: model.positions,
 				col: model.colors,
 				idx: model.indices,
-				uv: model.uv
+				uv: model.uv,
+				belongsToPipeline: i
 			})
+			}
 		}
-	}
-}
-
-async function ur(){
-	if (!navigator.gpu) {return;}
-
-	await init();
-
-
-	await initializeScene();
-
 	ogModels = new Array(models.length);
 	for(var i = 0;i<models.length;++i){
 		ogModels[i]= {
@@ -303,6 +305,14 @@ async function ur(){
 			uv: models[i].uv.slice()
 		}
 	}
+}
+
+async function ur(){
+	if (!navigator.gpu) {return;}
+
+	await init();
+
+	await initializeScene();
 
 	await createPipeline();
 
@@ -350,9 +360,9 @@ async function updatePositionBuffers(){
 		var newidx = Array();
 		for(var j=0;j<models[i].idx.length;){
 
-			console.log("triangle"+j/3);
+			//console.log("triangle"+j/3);
 
-			console.log(models[i].idx[j]);
+			//console.log(models[i].idx[j]);
 
 			var cur = models[i].idx[j];
 
@@ -383,7 +393,7 @@ var imageBitmap;
 
 var colorAttachment;
 
-var camPos = [0,0,0];
+var camPos = [0,0,-10];
 var camRot = [0,0,0];
 
 function createSolidColorTexture(r, g, b, a) {
@@ -456,27 +466,27 @@ async function render(){
         resource: transformBufferBinding
     }];
 
-	const bindGroup2 = device.createBindGroup({
-		layout: bindGroupLayout2,
+	const texBindGroup = device.createBindGroup({
+		layout: bindGroupLayout[1],
 		entries: [ 
 		  { binding: 0, resource: sampler },
 		  { binding: 1, resource: createSolidColorTexture(1,Math.abs(Math.sin(now)),1,1).createView() },
 		],
 	  });
-	
 
     const bindGroupDescriptor = {
-        layout: bindGroupLayout,
+        layout: bindGroupLayout[0],
         entries: transformBufferBindGroupEntry
     };
-    bindGroup = device.createBindGroup(bindGroupDescriptor);
+
+	bindGroup= [];
+    bindGroup.push(device.createBindGroup(bindGroupDescriptor));
+	bindGroup.push(texBindGroup);
+
 
 	glm.mat4.perspectiveZO(projectionMatrix, 2, canvas.clientWidth/canvas.clientHeight, 0.01, 1000000.0);
 
 	var viewMatrix = glm.mat4.create();
-	//glm.mat4.rotate(viewMatrix,viewMatrix,now,glm.vec3.fromValues(0,5,0));
-	//glm.mat4.translate(viewMatrix, viewMatrix, glm.vec3.fromValues(0, -1, -20));
-	//glm.mat4.translate(projectionMatrix, projectionMatrix, glm.vec3.fromValues(0, -1, -20));
 
 	var modelViewProjectionMatrix = glm.mat4.create();
     glm.mat4.multiply(modelViewProjectionMatrix, projectionMatrix, viewMatrix);
@@ -484,9 +494,6 @@ async function render(){
 	glm.mat4.rotateX(modelViewProjectionMatrix,modelViewProjectionMatrix,camRot[0]);
 	glm.mat4.rotateY(modelViewProjectionMatrix,modelViewProjectionMatrix,camRot[1]);
 	glm.mat4.rotateZ(modelViewProjectionMatrix,modelViewProjectionMatrix,camRot[2]);
-	
-
-
 
 	glm.mat4.translate(modelViewProjectionMatrix,modelViewProjectionMatrix,glm.vec3.fromValues(camPos[0],camPos[1],camPos[2]));
 
@@ -494,7 +501,6 @@ async function render(){
 	const pass = encoder.beginRenderPass(renderPassDesc);
 
 
-	pass.setPipeline(pipeline);
 
 	pass.setViewport(0,0,canvas.width,canvas.height,0,1);
 	pass.setScissorRect(0,0,canvas.width,canvas.height);
@@ -502,11 +508,14 @@ async function render(){
     device.queue.writeBuffer(transformBuffer, 0, modelViewProjectionMatrix);
 
 	for(var i = 0;i<models.length;++i){
-				
+		pass.setPipeline(pipelines[i]);
 		pass.setIndexBuffer(modelsMeta[i].idxBuf,'uint16');
 
-		pass.setBindGroup(0,bindGroup);
-		pass.setBindGroup(1,bindGroup2);
+		pass.setBindGroup(0,bindGroup[0]);
+		pass.setBindGroup(1,bindGroup[1]);		
+		pass.setBindGroup(2,bindGroup[0]);
+		pass.setBindGroup(3,bindGroup[1]);
+
 		pass.setVertexBuffer(0, modelsMeta[i].posBuf);
 		pass.setVertexBuffer(1, modelsMeta[i].colBuf);
 		pass.setVertexBuffer(2, modelsMeta[i].uvBuf);
