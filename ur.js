@@ -545,8 +545,6 @@ async function render(){
 		pass.setBindGroup(0,bindGroup[i*2]);
 		pass.setBindGroup(1,bindGroup[i*2+1]);
 
-		await materialCode();
-
 		pass.setVertexBuffer(0, modelsMeta[i].posBuf);
 		pass.setVertexBuffer(1, modelsMeta[i].colBuf);
 		pass.setVertexBuffer(2, modelsMeta[i].uvBuf);
@@ -604,11 +602,6 @@ async function input(){
 
 }
 
-async function materialCode(){
-	models[0].materials[0].albedo = createSolidColorTexture(0,.5+(Math.cos(now)/2),.5+(Math.sin(now)/2),1);
-	models[1].materials[0].albedo = createCheckerColorTexture(1,0,1,1);
-}
-
 async function gameCode(){
 		
 	setInterval(input,10);
@@ -616,6 +609,9 @@ async function gameCode(){
 	gameObjects[0].transform.rotation[0] = now * 5;
 
 	gameObjects[1].transform.rotation[1] = (now);
+
+	models[0].materials[0].albedo = createSolidColorTexture(0,.5+(Math.cos(now)/2),.5+(Math.sin(now)/2),1);
+	models[1].materials[0].albedo = createCheckerColorTexture(1,0,1,1);
 
 	if (held.get("a")){
 		camPos[0] -= 5 * deltaTime
