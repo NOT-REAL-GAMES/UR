@@ -1,3 +1,6 @@
+//ok, smart guy, let's see you take a crack at it!!!
+//🧩 🧩
+
 import * as glm from './src/glm/index.js';
 
 var canvas; var adapter; var device;
@@ -225,6 +228,14 @@ async function initializeScene(){
 		texture: { type: "float" }
 	}];
 
+	const bindGroupLayoutDescriptor = { entries: transformBufferBindGroupLayoutEntry };
+	bindGroupLayout.push(device.createBindGroupLayout(bindGroupLayoutDescriptor));
+
+	const bindGroupLayoutDescriptor2 = { entries: transformBufferBindGroupLayoutEntry2 };
+	bindGroupLayout.push(device.createBindGroupLayout(bindGroupLayoutDescriptor2));
+
+	console.log(bindGroupLayout.length);
+
 	for(var i = 0;i<scene.gameObjects.length;++i){
 		if(scene.gameObjects[i].components.renderer!=null){
 			var model;
@@ -238,11 +249,6 @@ async function initializeScene(){
 
 			var vert; var frag;
 
-			const bindGroupLayoutDescriptor = { entries: transformBufferBindGroupLayoutEntry };
-			bindGroupLayout.push(device.createBindGroupLayout(bindGroupLayoutDescriptor));
-	
-			const bindGroupLayoutDescriptor2 = { entries: transformBufferBindGroupLayoutEntry2 };
-			bindGroupLayout.push(device.createBindGroupLayout(bindGroupLayoutDescriptor2));
 
 			if(!scene.gameObjects[i].components.renderer.materials[0].customVertexCode){
 				await fetch(scene.gameObjects[i].components.renderer.materials[0].vertex).then((response) => response.text()).then((shader) => {vert = shader;});	
@@ -292,7 +298,10 @@ async function initializeScene(){
 				col: model.colors,
 				idx: model.indices,
 				uv: model.uv,
-				belongsToPipeline: i
+				belongsToPipeline: i,
+				materials: [{
+					albedo: createSolidColorTexture(1,1,1,1)
+				}]
 			})
 			}
 		}
@@ -396,11 +405,26 @@ var colorAttachment;
 var camPos = [0,0,-10];
 var camRot = [0,0,0];
 
-function createSolidColorTexture(r, g, b, a) {
-	const data = new Uint8Array([     0,       0,       0,     255,     0,       0,       0,     255,r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,
-									  0,       0,       0,     255,      0,       0,       0,     255, r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,
-								r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255,      0,       0,       0,     255,      0,       0,        0,    255,
+function createCheckerColorTexture(r, g, b, a) {
+	const data = new Uint8Array([    0,       0,        0,    255,      0,       0,        0,    255,r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,
+									 0,       0,        0,    255,      0,       0,        0,    255, r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,
+								r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255,      0,       0,        0,    255,      0,       0,        0,    255,
 								r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,      0,       0,        0,    255,      0,       0,        0,    255]);
+	const texture = device.createTexture({
+	  size: { width: 4, height: 4 },
+	  format: "rgba8unorm",
+	  usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+	});
+	device.queue.writeTexture({ texture }, data, {bytesPerRow:16}, { width: 4, height: 4 });
+	return texture;
+  }
+
+
+function createSolidColorTexture(r, g, b, a) {
+	const data = new Uint8Array([r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,
+								 r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,
+								r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255,
+								r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255]);
 	const texture = device.createTexture({
 	  size: { width: 4, height: 4 },
 	  format: "rgba8unorm",
@@ -466,23 +490,28 @@ async function render(){
         resource: transformBufferBinding
     }];
 
-	const texBindGroup = device.createBindGroup({
-		layout: bindGroupLayout[1],
-		entries: [ 
-		  { binding: 0, resource: sampler },
-		  { binding: 1, resource: createSolidColorTexture(1,Math.abs(Math.sin(now)),1,1).createView() },
-		],
-	  });
-
-    const bindGroupDescriptor = {
-        layout: bindGroupLayout[0],
-        entries: transformBufferBindGroupEntry
-    };
-
 	bindGroup= [];
-    bindGroup.push(device.createBindGroup(bindGroupDescriptor));
-	bindGroup.push(texBindGroup);
 
+	for(var i=0;i<models.length;++i){
+
+
+		console.log(bindGroupLayout[1]!=null);
+		const texBindGroup = device.createBindGroup({
+			layout: bindGroupLayout[1],
+			entries: [ 
+		  		{ binding: 0, resource: sampler },
+		  		{ binding: 1, resource: models[i].materials[0].albedo.createView() },
+			],
+	  	});
+
+		const bindGroupDescriptor = {
+			layout: bindGroupLayout[0],
+        	entries: transformBufferBindGroupEntry
+		};
+
+		bindGroup.push(device.createBindGroup(bindGroupDescriptor));
+		bindGroup.push(texBindGroup);
+	}
 
 	glm.mat4.perspectiveZO(projectionMatrix, 2, canvas.clientWidth/canvas.clientHeight, 0.01, 1000000.0);
 
@@ -498,28 +527,31 @@ async function render(){
 	glm.mat4.translate(modelViewProjectionMatrix,modelViewProjectionMatrix,glm.vec3.fromValues(camPos[0],camPos[1],camPos[2]));
 
 	encoder = device.createCommandEncoder();
+
 	const pass = encoder.beginRenderPass(renderPassDesc);
 
+	for(var i = 0;i<models.length;++i){	
 
+		console.log("drawing object "+i);
 
-	pass.setViewport(0,0,canvas.width,canvas.height,0,1);
-	pass.setScissorRect(0,0,canvas.width,canvas.height);
+		pass.setViewport(0,0,canvas.width,canvas.height,0,1);
+		pass.setScissorRect(0,0,canvas.width,canvas.height);
 
-    device.queue.writeBuffer(transformBuffer, 0, modelViewProjectionMatrix);
+		device.queue.writeBuffer(transformBuffer, 0, modelViewProjectionMatrix);
 
-	for(var i = 0;i<models.length;++i){
 		pass.setPipeline(pipelines[i]);
 		pass.setIndexBuffer(modelsMeta[i].idxBuf,'uint16');
 
-		pass.setBindGroup(0,bindGroup[0]);
-		pass.setBindGroup(1,bindGroup[1]);		
-		pass.setBindGroup(2,bindGroup[0]);
-		pass.setBindGroup(3,bindGroup[1]);
+		pass.setBindGroup(0,bindGroup[i*2]);
+		pass.setBindGroup(1,bindGroup[i*2+1]);
+
+		await materialCode();
 
 		pass.setVertexBuffer(0, modelsMeta[i].posBuf);
 		pass.setVertexBuffer(1, modelsMeta[i].colBuf);
 		pass.setVertexBuffer(2, modelsMeta[i].uvBuf);
-		pass.drawIndexed(models[i].idx.length,1);
+		pass.drawIndexed(models[i].idx.length,1);	
+		
 	}
 
 	pass.end();
@@ -570,6 +602,11 @@ async function input(){
 			  }	  
 		  };
 
+}
+
+async function materialCode(){
+	models[0].materials[0].albedo = createSolidColorTexture(0,.5+(Math.cos(now)/2),.5+(Math.sin(now)/2),1);
+	models[1].materials[0].albedo = createCheckerColorTexture(1,0,1,1);
 }
 
 async function gameCode(){
