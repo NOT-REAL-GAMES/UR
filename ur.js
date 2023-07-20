@@ -33,6 +33,14 @@ var url = window.location.href;
 var fModule;
 var vModule;
 
+var cubeTexture;
+var imageBitmap;
+
+var colorAttachment;
+
+var camPos = [0,0,-10];
+var camRot = [0,0,0];
+
 async function init(){
 	now = Date.now();
 
@@ -135,10 +143,6 @@ function scale(pos,scale){
 	}
 	//console.log(arr);
 	return arr;
-}
-
-async function createPipeline(){	
-
 }
 
 async function createBuffer(array,usage){
@@ -266,7 +270,6 @@ async function initializeScene(){
 			var pipelineLayoutDesc = {bindGroupLayouts: bindGroupLayout};
 			var layout = device.createPipelineLayout(pipelineLayoutDesc);
 		
-			const colorState = {format: 'bgra8unorm'};
 			const pipelineDesc = {
 				layout: layout,
 				vertex: {
@@ -277,7 +280,7 @@ async function initializeScene(){
 				fragment: {
 					module: fModule,
 					entryPoint: 'main',
-					targets: [colorState]
+					targets: [{format: 'bgra8unorm'}]
 				},
 				primitive: {
 					frontFace: 'cw',
@@ -322,8 +325,6 @@ async function ur(){
 	await init();
 
 	await initializeScene();
-
-	await createPipeline();
 
 	render();
 }
@@ -397,19 +398,13 @@ async function updatePositionBuffers(){
 	}
 }
 
-var cubeTexture;
-var imageBitmap;
-
-var colorAttachment;
-
-var camPos = [0,0,-10];
-var camRot = [0,0,0];
 
 function createCheckerColorTexture(r, g, b, a) {
-	const data = new Uint8Array([    0,       0,        0,    255,      0,       0,        0,    255,r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,
-									 0,       0,        0,    255,      0,       0,        0,    255, r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,
-								r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255,      0,       0,        0,    255,      0,       0,        0,    255,
-								r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,      0,       0,        0,    255,      0,       0,        0,    255]);
+	const data = new Uint8Array([
+		0,       0,        0,    255,      0,       0,        0,    255,r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,
+		0,       0,        0,    255,      0,       0,        0,    255, r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,
+		r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255,      0,       0,        0,    255,      0,       0,        0,    255,
+		r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,      0,       0,        0,    255,      0,       0,        0,    255]);
 	const texture = device.createTexture({
 	  size: { width: 4, height: 4 },
 	  format: "rgba8unorm",
@@ -421,10 +416,11 @@ function createCheckerColorTexture(r, g, b, a) {
 
 
 function createSolidColorTexture(r, g, b, a) {
-	const data = new Uint8Array([r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,
-								 r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,
-								r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255,
-								r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255]);
+	const data = new Uint8Array([
+		r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,
+		r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255,
+		r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255,
+		r * 255, g * 255, b * 255, a * 255,r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255, r * 255, g * 255, b * 255, a * 255]);
 	const texture = device.createTexture({
 	  size: { width: 4, height: 4 },
 	  format: "rgba8unorm",
