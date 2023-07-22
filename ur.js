@@ -41,6 +41,42 @@ var colorAttachment;
 var camPos = [0,0,-10];
 var camRot = [0,0,0];
 
+var tex_window;
+var tex_canvas;
+var tex_context;
+
+var tex_image = new Array (0);
+
+var isPainting = false;
+
+for(var y=0;y<512;++y){
+	for(var x=0;x<512;++x){
+		tex_image.push(255);
+		tex_image.push(0);
+		tex_image.push(80);
+		tex_image.push(255);
+	}
+}
+
+tex_image = Uint8ClampedArray.from(tex_image);
+
+console.log(tex_image);
+
+const draw = (e) => {
+    if(!isPainting) {
+        return;
+    }
+
+	tex_window.console.log("drawign");
+
+    tex_context.lineWidth = 5;
+	tex_context.strokeStyle = "black";
+    tex_context.lineCap = 'round';
+
+    tex_context.lineTo(e.clientX, e.clientY);
+    tex_context.stroke();
+}
+
 async function init(){
 	now = Date.now();
 
@@ -49,6 +85,32 @@ async function init(){
 	device = await adapter.requestDevice({
 		extensions: adapter.extensions
 	});
+
+	let params = `scrollbars=no,resizable=no,status=no,location=no,toolbar=no,menubar=no,
+	width=512,height=512,left=-1000,top=-1000`;
+	tex_window = open("", "Texture Editor", params);
+
+	
+	tex_canvas = document.createElement("canvas",HTMLCanvasElement);
+
+	tex_window.document.body.style = "margin: 0;";
+	tex_window.document.body.appendChild(tex_canvas);
+	//tex_canvas.outerHTML = "<canvas id='cv'></canvas>";
+
+	tex_context = tex_canvas.getContext('2d');
+
+
+	tex_canvas.width = 512;
+	tex_canvas.height = 512;
+
+	var imgData = new ImageData(
+		tex_image,
+		512,
+		512,
+		undefined
+	);
+
+	tex_context.putImageData(imgData,0,0);
 
 	queue = device.queue;
 	context = canvas.getContext("webgpu");
@@ -238,15 +300,16 @@ async function initializeScene(){
 	const bindGroupLayoutDescriptor2 = { entries: transformBufferBindGroupLayoutEntry2 };
 	bindGroupLayout.push(device.createBindGroupLayout(bindGroupLayoutDescriptor2));
 
-	console.log(bindGroupLayout.length);
+	//console.log(bindGroupLayout.length);
 
 	for(var i = 0;i<scene.gameObjects.length;++i){
 		if(scene.gameObjects[i].components.renderer!=null){
+
+			var rd = scene.gameObjects[i].components.renderer;
+
 			var model;
 			console.log("model found");
-			await fetch(
-				scene.gameObjects[i].components.renderer.modelSource
-			).then((response) => response.json()).then((json) => {model = json;});	
+			await fetch(rd.modelSource).then((response) => response.json()).then((json) => {model = json;});	
 			gameObjects.push(scene.gameObjects[i]);
 			console.log(model.uv);
 			
@@ -254,11 +317,11 @@ async function initializeScene(){
 			var vert; var frag;
 
 
-			if(!scene.gameObjects[i].components.renderer.materials[0].customVertexCode){
-				await fetch(scene.gameObjects[i].components.renderer.materials[0].vertex).then((response) => response.text()).then((shader) => {vert = shader;});	
+			if(!rd.materials[0].customVertexCode){
+				await fetch(rd.materials[0].vertex).then((response) => response.text()).then((shader) => {vert = shader;});	
 			}
-			if(!scene.gameObjects[i].components.renderer.materials[0].customFragmentCode){
-				await fetch(scene.gameObjects[i].components.renderer.materials[0].fragment).then((response) => response.text()).then((shader) => {frag = shader;});	
+			if(!rd.materials[0].customFragmentCode){
+				await fetch(rd.materials[0].fragment).then((response) => response.text()).then((shader) => {frag = shader;});	
 			}
 	
 			vModule = device.createShaderModule({code:vert});
@@ -323,6 +386,21 @@ async function ur(){
 	if (!navigator.gpu) {return;}
 
 	await init();
+
+	tex_window.onmousedown = function(e) {
+		isPainting = true;
+		startX = e.clientX;
+		startY = e.clientY;
+	};
+	
+	tex_window.onmouseup = function(e) {
+		isPainting = false;
+		tex_context.stroke();
+		tex_context.beginPath();
+	};
+	
+	tex_window.onmousemove = draw;
+	
 
 	await initializeScene();
 
@@ -430,6 +508,16 @@ function createSolidColorTexture(r, g, b, a) {
 	return texture;
   }
 
+  function writeTexture(data,w,h,format){
+	const texture = device.createTexture({
+		size: { width: w, height: h },
+		format: format,
+		usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+	  });
+	  device.queue.writeTexture({ texture }, data, {bytesPerRow:w*4}, { width: w, height: h });
+	  return texture;
+  }
+
 async function render(){
 
 	await gameCode();
@@ -491,7 +579,7 @@ async function render(){
 	for(var i=0;i<models.length;++i){
 
 
-		console.log(bindGroupLayout[1]!=null);
+		//console.log(bindGroupLayout[1]!=null);
 		const texBindGroup = device.createBindGroup({
 			layout: bindGroupLayout[1],
 			entries: [ 
@@ -528,7 +616,7 @@ async function render(){
 
 	for(var i = 0;i<models.length;++i){	
 
-		console.log("drawing object "+i);
+		//console.log("drawing object "+i);
 
 		pass.setViewport(0,0,canvas.width,canvas.height,0,1);
 		pass.setScissorRect(0,0,canvas.width,canvas.height);
@@ -605,6 +693,8 @@ async function gameCode(){
 	gameObjects[0].transform.rotation[0] = now * 5;
 
 	gameObjects[1].transform.rotation[1] = (now);
+
+	
 
 	models[0].materials[0].albedo = createSolidColorTexture(0,.5+(Math.cos(now)/2),.5+(Math.sin(now)/2),1);
 	models[1].materials[0].albedo = createCheckerColorTexture(1,0,1,1);
