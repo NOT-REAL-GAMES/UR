@@ -400,7 +400,6 @@ async function ur(){
 	};
 	
 	tex_window.onmousemove = draw;
-	
 
 	await initializeScene();
 
@@ -694,9 +693,21 @@ async function gameCode(){
 
 	gameObjects[1].transform.rotation[1] = (now);
 
-	
+	console.log(tex_context!=null);
 
-	models[0].materials[0].albedo = createSolidColorTexture(0,.5+(Math.cos(now)/2),.5+(Math.sin(now)/2),1);
+	var blabla = tex_context.getImageData(0,0,512,512).data;
+	
+	console.log("image data: "+blabla.length);
+
+	var txarray = new Uint8Array(blabla.length);
+
+	for(var j=0;j<blabla.length;++j){
+		txarray[j]=blabla[j];
+	}
+
+	console.log("texture array: "+txarray.length);
+
+	models[0].materials[0].albedo = writeTexture(txarray,512,512,'rgba8unorm');
 	models[1].materials[0].albedo = createCheckerColorTexture(1,0,1,1);
 
 	if (held.get("a")){
