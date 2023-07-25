@@ -333,7 +333,7 @@ async function initializeScene(){
 		{
 			binding: 1,
 			visibility: GPUShaderStage.FRAGMENT,
-			texture: { sampleType: "uint" }
+			buffer: { type: "uniform" }	
 		}
 	] };
 	pickBindGroupLayout = device.createBindGroupLayout(pickBindGroupLayoutDescriptor);
@@ -683,12 +683,30 @@ async function render(){
 		});
 		depthid = writeTexture(id,1,1,"r32uint");
 		  
+		var idBuffer = await device.createBuffer({
+			size: 4*4,
+			usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+		});
+
+		var idSrc = device.createBuffer({
+			size: 4*4,
+			usage: GPUBufferUsage.COPY_SRC,
+			mappedAtCreation: true
+		});
+		new Uint32Array(idSrc.getMappedRange()).set(id);
+		idSrc.unmap();
+
+		const idBufferBinding = {
+			buffer: idBuffer,
+			offset: 0,
+			size: 4*4
+		};
 	
 		pickBindGroup.push(device.createBindGroup({
 			layout: pickBindGroupLayout,
 			entries: [
-				{binding: 0, resource:transformBufferBinding},
-				{binding: 1, resource: depthid.createView()},
+				{binding: 0, resource: transformBufferBinding},
+				{binding: 1, resource: idBufferBinding},
 
 			]
 		}));
@@ -726,17 +744,19 @@ async function render(){
 
 	var pickEncoder = device.createCommandEncoder();
 
+	pickEncoder.copyBufferToBuffer(idSrc, 0, idBuffer, 0, 4*4);
+		
 	const pickpass = pickEncoder.beginRenderPass(pickRenderPassDesc);
-
 
 	//PICK PASS
 	
-	for(var i = 0;i<models.length;++i){	
+	for(var i = 0;i<models.length;++i){		
+		
 
 		objIndex = i;
 
 		pickpass.setPipeline(pickPipeline);
-		pickpass.setBindGroup(0,pickBindGroup[0]);
+		pickpass.setBindGroup(0,pickBindGroup[i]);
 
 		//console.log("drawing object "+i);
 
