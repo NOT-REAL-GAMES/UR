@@ -19,6 +19,24 @@
 		}
 	},{
 		"transform":{
+			"name": "cube",
+			"position": [5,0,0],
+			"rotation": [0,0,0],
+			"scale": [1,1,1]
+		},
+		"components":{
+			"renderer":{
+				"modelSource": "./src/cube.json",
+				"materials": [{
+					"vertex": "./src/default.vert",
+					"fragment": "./src/default.frag",
+					"customVertexCode": false,
+					"customFragmentCode": false
+				}]
+			}
+		}
+	},{
+		"transform":{
 			"name": "floor",
 			"position": [0,-15,0],
 			"rotation": [0,0,0],

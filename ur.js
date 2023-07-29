@@ -60,7 +60,7 @@ for(var y=0;y<512;++y){
 
 tex_image = Uint8ClampedArray.from(tex_image);
 
-console.log(tex_image);
+//console.log(tex_image);
 
 const transformSize = 4 * 16;
 const transformBufferDescriptor = {
@@ -244,6 +244,8 @@ var objIndex = 0;
 
 var pickBindGroupLayout;
 
+var depthTexDesc;
+
 var pickBindGroupLayoutEntry = [{
 			binding: 0,
 			visibility: GPUShaderStage.FRAGMENT,
@@ -256,8 +258,8 @@ async function initializeScene(){
 
 	console.log(scene.gameObjects);
 
-	const depthTexDesc = {
-		size: [canvas.width, canvas.height, 1],
+	depthTexDesc = {
+		size: [context.getCurrentTexture().width,context.getCurrentTexture().height,1], 
 		dimension: '2d',
 		format: 'depth24plus-stencil8',
 		usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC
@@ -606,6 +608,8 @@ function writeTexture(data,w,h,format){
 }
 
 async function render(){
+	
+	//console.clear();
 
 	await gameCode();
 
@@ -613,7 +617,20 @@ async function render(){
 
 
 	colorAttachment = {
-		view: undefined,
+		view: context.getCurrentTexture().createView(),
+		clearValue: {r:0,g:0,b:0,a:1},
+		loadOp: 'clear',
+		storeOp: 'store'
+	};
+
+	var pickTexture = device.createTexture({
+		size: [context.getCurrentTexture().width,context.getCurrentTexture().height,1], 
+		format: 'r32uint',
+		usage: GPUTextureUsage.COPY_SRC | GPUTextureUsage.RENDER_ATTACHMENT
+	});
+	
+	var pickColorAttachment = {
+		view: pickTexture.createView(),
 		clearValue: {r:0,g:0,b:0,a:1},
 		loadOp: 'clear',
 		storeOp: 'store'
@@ -629,29 +646,30 @@ async function render(){
 		stencilStoreOp: 'store'
 	}
 
+	var pickDepthTex = device.createTexture(depthTexDesc);
+	var pickDepthTexView = pickDepthTex.createView();
+
+	const pickDepthAttachment = {
+		view: pickDepthTexView,
+		depthClearValue: 1,
+		depthLoadOp: 'clear',
+		depthStoreOp: 'store',
+		stencilClearValue: 0,
+		stencilLoadOp: 'clear',
+		stencilStoreOp: 'store'
+	}
+
 	renderPassDesc = {
 		colorAttachments: [colorAttachment],
 		depthStencilAttachment: depthAttachment
 	};
 	
-	var pickTexture = device.createTexture({
-		size: [context.getCurrentTexture().width,context.getCurrentTexture().height,1], 
-		format: 'r32uint',
-		usage: GPUTextureUsage.COPY_SRC | GPUTextureUsage.RENDER_ATTACHMENT
-	});
-	
-	colorAttachment.view = pickTexture.createView();
-
 	var pickRenderPassDesc = {
-		colorAttachments: [colorAttachment],
-		depthStencilAttachment: depthAttachment
+		colorAttachments: [pickColorAttachment],
+		depthStencilAttachment: pickDepthAttachment
 	};
-
-	
-	
     
     transformBuffer = device.createBuffer(transformBufferDescriptor)
-
 	
 	const sampler = device.createSampler({
 		addressModeU: 'repeat',
@@ -693,7 +711,7 @@ async function render(){
 			usage: GPUBufferUsage.COPY_SRC,
 			mappedAtCreation: true
 		});
-		new Uint32Array(idSrc.getMappedRange()).set(id);
+		new Uint32Array(idSrc.getMappedRange()).set(i);
 		idSrc.unmap();
 
 		const idBufferBinding = {
@@ -751,7 +769,7 @@ async function render(){
 	//PICK PASS
 	
 	for(var i = 0;i<models.length;++i){		
-		
+
 
 		objIndex = i;
 
@@ -760,8 +778,8 @@ async function render(){
 
 		//console.log("drawing object "+i);
 
-		pickpass.setViewport(0,0,canvas.width,canvas.height,0,1);
-		pickpass.setScissorRect(0,0,canvas.width,canvas.height);
+		pickpass.setViewport(0,0,context.getCurrentTexture().width,context.getCurrentTexture().height,0,1);
+		pickpass.setScissorRect(0,0,context.getCurrentTexture().width,context.getCurrentTexture().height);
 
 		device.queue.writeBuffer(transformBuffer, 0, modelViewProjectionMatrix);
 
@@ -778,9 +796,33 @@ async function render(){
 		
 	}
 
-	pickpass.end();	await device.queue.submit([pickEncoder.finish()]);
+	pickpass.end();	
+	
+	var pickBuffer = await device.createBuffer({
+		size: 1824,
+		usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
+	});
 
-	colorAttachment.view = context.getCurrentTexture().createView();
+
+	pickEncoder.copyTextureToBuffer({
+		texture: pickTexture,
+		origin: {
+			x: context.getCurrentTexture().width/2,	//GET MOUSE POSITION
+			y: context.getCurrentTexture().height/2	//AND PUT IT IN HERE
+		}
+	}, {
+		buffer: pickBuffer,
+		bytesPerRow: 256,
+	},{
+		width: 8, 
+		height:8
+	}
+	
+	);
+
+	console.log()
+
+	await device.queue.submit([pickEncoder.finish()]);
 
 	encoder = await device.createCommandEncoder();
 
@@ -788,10 +830,10 @@ async function render(){
 
 	for(var i = 0;i<models.length;++i){	
 
-		//console.log("drawing object "+i);
+		//console.log("PICK PASS: drawing object "+i);
 
-		pass.setViewport(0,0,canvas.width,canvas.height,0,1);
-		pass.setScissorRect(0,0,canvas.width,canvas.height);
+		pass.setViewport(0,0,context.getCurrentTexture().width,context.getCurrentTexture().height,0,1);
+		pass.setScissorRect(0,0,context.getCurrentTexture().width,context.getCurrentTexture().height);
 
 		device.queue.writeBuffer(transformBuffer, 0, modelViewProjectionMatrix);
 
@@ -817,7 +859,14 @@ async function render(){
 	deltaTime = Date.now() / 1000 - now;
 	//console.log(deltaTime);
 
-	now = Date.now() / 1000;	
+	now = Date.now() / 1000;
+	
+	await pickBuffer.mapAsync(GPUMapMode.READ);
+	var selectedid = await pickBuffer.getMappedRange();
+	console.log(selectedid.slice(0));
+
+	await pickBuffer.unmap();
+
 }
 
 var deltaTime = 0;
@@ -836,7 +885,7 @@ async function input(){
 			alert(`Combination of ctrlKey + ${keyName}`);
 			} else {
 				held.set(keyName,true);
-				console.log(held.get(keyName));
+				//console.log(held.get(keyName));
 			}	  
 		};
 		
@@ -852,7 +901,7 @@ async function input(){
 			alert(`Combination of ctrlKey + ${keyName}`);
 			} else {
 				held.set(keyName,false);
-				console.log(held.get(keyName));
+				//console.log(held.get(keyName));
 			  }	  
 		  };
 
@@ -866,7 +915,7 @@ async function gameCode(){
 
 	gameObjects[1].transform.rotation[1] = (now);
 
-	console.log(tex_window!=null);
+	//console.log(tex_window!=null);
 
 	if(!tex_window.closed){
 
