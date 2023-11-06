@@ -690,9 +690,11 @@ async function render(){
 
 	bindGroup= [];
 
+	var pickEncoder = device.createCommandEncoder();
+
 	for(var i=0;i<models.length;++i){
 
-		const id = new Uint8Array([Math.floor(i/16777216)%256,Math.floor(i/65536)%256,Math.floor(i/256)%256,i%256]);
+		const id = new Uint8Array([Math.floor((i+1)/16777216)%256,Math.floor((i+1)/65536)%256,Math.floor((i+1)/256)%256,(i+1)%256]);
 
 		var depthid = device.createTexture({
 			size: { width: 1, height: 1 },
@@ -706,13 +708,20 @@ async function render(){
 			usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
 		});
 
-		var idSrc = device.createBuffer({
+		var idSrc = await device.createBuffer({
 			size: 4*4,
 			usage: GPUBufferUsage.COPY_SRC,
 			mappedAtCreation: true
 		});
-		new Uint32Array(idSrc.getMappedRange()).set(i);
-		idSrc.unmap();
+		var bla = await idSrc.getMappedRange();
+		new Uint32Array(bla).set(id);
+
+		//console.log(bla.slice(0)); //THIS IS WORKING
+		await idSrc.unmap();
+		pickEncoder.copyBufferToBuffer(idSrc, 0, idBuffer, 0, 4*4);
+
+		
+		//await idBuffer.mapAsync(GPUMapMode.READ);
 
 		const idBufferBinding = {
 			buffer: idBuffer,
@@ -760,9 +769,6 @@ async function render(){
 
 	glm.mat4.translate(modelViewProjectionMatrix,modelViewProjectionMatrix,glm.vec3.fromValues(camPos[0],camPos[1],camPos[2]));
 
-	var pickEncoder = device.createCommandEncoder();
-
-	pickEncoder.copyBufferToBuffer(idSrc, 0, idBuffer, 0, 4*4);
 		
 	const pickpass = pickEncoder.beginRenderPass(pickRenderPassDesc);
 
@@ -776,10 +782,14 @@ async function render(){
 		pickpass.setPipeline(pickPipeline);
 		pickpass.setBindGroup(0,pickBindGroup[i]);
 
-		//console.log("drawing object "+i);
-
 		pickpass.setViewport(0,0,context.getCurrentTexture().width,context.getCurrentTexture().height,0,1);
 		pickpass.setScissorRect(0,0,context.getCurrentTexture().width,context.getCurrentTexture().height);
+
+
+		//console.log("drawing object "+i);
+
+		//pickpass.setViewport(0,0,context.getCurrentTexture().width,context.getCurrentTexture().height,0,1);
+		//pickpass.setScissorRect(0,0,context.getCurrentTexture().width,context.getCurrentTexture().height);
 
 		device.queue.writeBuffer(transformBuffer, 0, modelViewProjectionMatrix);
 
@@ -799,7 +809,7 @@ async function render(){
 	pickpass.end();	
 	
 	var pickBuffer = await device.createBuffer({
-		size: 1824,
+		size: 256,
 		usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
 	});
 
@@ -807,15 +817,19 @@ async function render(){
 	pickEncoder.copyTextureToBuffer({
 		texture: pickTexture,
 		origin: {
-			x: context.getCurrentTexture().width/2,	//GET MOUSE POSITION
-			y: context.getCurrentTexture().height/2	//AND PUT IT IN HERE
-		}
+			x: 640,	//GET MOUSE POSITION
+			y: 640	//AND PUT IT IN HERE
+		}	// should return the id when you 
+			// FIGURE OUT HOW THE FUCK TO GET
+			// IT TO RECOGNIZE IT :))
+
+			// i.e. DON'T CHANGE THIS YOU DUMB BASTARD
 	}, {
 		buffer: pickBuffer,
 		bytesPerRow: 256,
 	},{
-		width: 8, 
-		height:8
+		width: 1, 
+		height:1
 	}
 	
 	);

@@ -4,12 +4,12 @@ struct PickUniforms{
 
 struct VSOut {
     @builtin(position) Position: vec4f,
-    @location(0) color: vec3f,
+    @location(0) @interpolate(flat) color: u32,
 };
 
 @group(0) @binding(1) var<uniform> pickUniforms: PickUniforms;
 
 @fragment
-fn main(@location(0) color : vec3<f32>) -> @location(0) u32 {
-    return pickUniforms.id;
+fn main(@location(0) @interpolate(flat) color : u32) -> @location(0) @interpolate(flat) u32 {
+    return (pickUniforms.id);
 }
