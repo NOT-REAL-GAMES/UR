@@ -656,7 +656,7 @@ async function render(){
 	for(var i = 0;i<models.length;++i){	
 
 		//calculate raycast from camera to scene
-		for(var j=0;j<models[i].pos.length;++j){
+		for(var j=0;j<models[i].idx.length;j+=3){
 			var startPos = glm.vec3.fromValues(camPos[0],camPos[1],camPos[2]);
 			var rotation = glm.vec3.fromValues(camRot[0],camRot[1],camRot[2]);
 			var len = 10000;
@@ -664,6 +664,33 @@ async function render(){
 			var endPos = glm.vec3.create();
 
 			glm.vec3.add(endPos,startPos,glm.vec3.fromValues(len*Math.sin(camRot[1]),0,len*Math.cos(camRot[1])));
+
+			//check if triangle intersects with line
+
+			var v1 = glm.vec3.fromValues(models[i].pos[models[i].idx[j]*3],models[i].pos[models[i].idx[j]*3+1],models[i].pos[models[i].idx[j]*3+2]);
+			var v2 = glm.vec3.fromValues(models[i].pos[models[i].idx[j+1]*3],models[i].pos[models[i].idx[j+1]*3+1],models[i].pos[models[i].idx[j+1]*3+2]);
+			var v3 = glm.vec3.fromValues(models[i].pos[models[i].idx[j+2]*3],models[i].pos[models[i].idx[j+2]*3+1],models[i].pos[models[i].idx[j+2]*3+2]);
+
+			var e1 = glm.vec3.create();
+			var e2 = glm.vec3.create();
+
+			glm.vec3.subtract(e1,v2,v1);
+			glm.vec3.subtract(e2,v3,v1);
+
+			var n = glm.vec3.create();
+			glm.vec3.cross(n,e1,e2);
+
+			console.log(n)
+
+			var d2 = glm.vec3.create();
+
+			glm.vec3.subtract(d2,endPos,startPos);
+
+			//console.log(glm.vec3.dot(n,d2));
+
+			//console.log(j+": "+v1);
+			//console.log(j+1+": "+v2);
+			//console.log(j+2+": "+v3);
 
 			//console.log(endPos);
 		}
