@@ -97,6 +97,7 @@ const draw = (e) => {
 async function init(){
 	now = Date.now();
 
+
 	canvas = document.querySelector("#ur");
 	adapter = await navigator.gpu.requestAdapter();
 	device = await adapter.requestDevice({
@@ -703,7 +704,56 @@ var deltaTime = 0;
 
 var held = new Map([]);
 
+function clicked(e) {
+
+    switch (e.button) {
+        case 0:
+          // left mouse button
+          break;
+        case 1:
+          // middle mouse button
+          break;
+        case 2:
+			held.set("rclick",true);
+
+			if (!document.pointerLockElement) {
+				canvas.requestPointerLock({
+				  unadjustedMovement: true,
+				});
+			  }    
+			}
+}
+
+function unclicked(e) {
+    switch (e.button) {
+        case 0:
+          // left mouse button
+          break;
+        case 1:
+          // middle mouse button
+          break;
+        case 2:
+			held.set("rclick",false);
+
+			if (document.pointerLockElement) {
+				document.exitPointerLock();
+			}    
+			}
+}
+
+
+var mdx = 0,mdy = 0;
+
 async function input(){
+
+	canvas.addEventListener('mousedown', clicked, false);
+	canvas.addEventListener('mouseup', unclicked, false);
+
+	document.onmousemove = (e) => {
+		mdx += e.movementX * .5;
+		mdy += e.movementY * .5;	
+	};
+
 	document.onkeydown = (event) =>{
 		  const keyName = event.key;
 	  
@@ -734,6 +784,9 @@ async function input(){
 				//console.log(held.get(keyName));
 			  }	  
 		  };
+
+		  mdx = mdx + (0-mdx) * 8 * deltaTime;
+		  mdy = mdy + (0-mdy) * 8 * deltaTime;
 
 }
 
@@ -783,25 +836,19 @@ async function gameCode(){
 
 	var temp = glm.vec3.fromValues(0,0,0);
 
-	
+	if(held.get("rclick")){
+		camRot[1] += 5 * deltaTime * mdx;
+	}
 
 	glm.vec3.add(temp,glm.vec3.fromValues(camPos[0],camPos[1],camPos[2]),
 	glm.vec3.fromValues(
 		camx*Math.cos(camRot[1])-camy*Math.sin(camRot[1]),0,
 		camy*Math.cos(camRot[1])+camx*Math.sin(camRot[1])));
-	console.log(temp);
 
 	camPos[0] = temp[0];
 	camPos[1] = temp[1];
 	camPos[2] = temp[2];
-
-
-	if (held.get("q")){
-		camRot[1] -= 5 * deltaTime
-	}
-	if (held.get("e")){
-		camRot[1] += 5 * deltaTime
-	}
+	
 
 }
 
