@@ -591,7 +591,6 @@ async function render(){
 	};
 	    
     transformBuffer = device.createBuffer(transformBufferDescriptor)
-    transformBuffer2 = device.createBuffer(transformBufferDescriptor)
 	
 	const sampler = device.createSampler({
 		addressModeU: 'repeat',
@@ -606,67 +605,15 @@ async function render(){
         size: transformSize
     };
 
-	const transformBufferBinding2 = {
-        buffer: transformBuffer2,
-        offset: 0,
-        size: transformSize
-    };
+
     const transformBufferBindGroupEntry = [{
         binding: 0,
         resource: transformBufferBinding
     }];
 
-	const transformBufferBindGroupEntry2 = [{
-        binding: 1,
-        resource: transformBufferBinding2
-    }];
-
 	bindGroup= [];
 
-
-	var ids = Array();
-
-	var idSrc = Array();
-
-	var idBuffer = Array();
-
 	for(var i=0;i<models.length;++i){
-
-		const id = new Uint8Array([Math.floor((i+1)/16777216)%256,Math.floor((i+1)/65536)%256,Math.floor((i+1)/256)%256,(i+1)%256]);
-
-		ids.push(id);
-
-		var depthid = device.createTexture({
-			size: { width: 1, height: 1 },
-			format: "r32uint",
-			usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
-		});
-		depthid = writeTexture(id,1,1,"r32uint");
-		  
-		idBuffer.push(await device.createBuffer({
-			size: 4*4,
-			usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-		}));
-
-		idSrc.push(await device.createBuffer({
-			size: 4*4,
-			usage: GPUBufferUsage.COPY_SRC,
-			mappedAtCreation: true
-		}));
-		var bla = await idSrc[i].getMappedRange();
-		new Uint32Array(bla).set(id);
-
-		//console.log(bla.slice(0)); //THIS IS WORKING
-		await idSrc[i].unmap();
-
-		
-		//await idBuffer.mapAsync(GPUMapMode.READ);
-
-		const idBufferBinding = {
-			buffer: idBuffer[i],
-			offset: 0,
-			size: 4*4
-		};
 
 		//console.log(bindGroupLayout[1]!=null);
 		const texBindGroup = device.createBindGroup({
@@ -707,6 +654,18 @@ async function render(){
 
 	for(var i = 0;i<models.length;++i){	
 
+		//calculate raycast from camera to scene
+		for(var j=0;j<models[i].pos.length;++j){
+			var startPos = glm.vec3.fromValues(camPos[0],camPos[1],camPos[2]);
+			var rotation = glm.vec3.fromValues(camRot[0],camRot[1],camRot[2]);
+			var len = 10000;
+
+			var endPos = glm.vec3.create();
+
+			glm.vec3.add(endPos,startPos,glm.vec3.fromValues(len*Math.sin(camRot[1]),0,len*Math.cos(camRot[1])));
+
+			//console.log(endPos);
+		}
 
 		pass.setViewport(0,0,context.getCurrentTexture().width,context.getCurrentTexture().height,0,1);
 		pass.setScissorRect(0,0,context.getCurrentTexture().width,context.getCurrentTexture().height);
@@ -730,14 +689,11 @@ async function render(){
 
 	await device.queue.submit([encoder.finish()]);
 
-
-	
 	console.log()
 
 	requestAnimationFrame(render);
 
 	deltaTime = Date.now() / 1000 - now;
-	//console.log(deltaTime);
 
 	now = Date.now() / 1000;
 	
@@ -781,9 +737,11 @@ async function input(){
 
 }
 
+var camx = 0,camy = 0;
+
 async function gameCode(){
 		
-	setInterval(input,10);
+	setInterval(input,20);
 
 	//gameObjects[0].transform.rotation[0] = now * 5;
 
@@ -807,18 +765,36 @@ async function gameCode(){
 	
 	models[1].materials[0].albedo = createCheckerColorTexture(1,0,1,1);
 
-	if (held.get("a")){
-		camPos[0] -= 5 * deltaTime
-	}
+	camx = camx + (0-camx) * .15;
+	camy = camy + (0-camy) * .15;
+
 	if (held.get("d")){
-		camPos[0] += 5 * deltaTime
+		camx -= .5 * deltaTime
+	}
+	if (held.get("a")){
+		camx += .5 * deltaTime
 	}
 	if (held.get("w")){
-		camPos[2] -= 5 * deltaTime
+		camy += .5 * deltaTime
 	}
 	if (held.get("s")){
-		camPos[2] += 5 * deltaTime
+		camy -= .5 * deltaTime
 	}
+
+	var temp = glm.vec3.fromValues(0,0,0);
+
+	
+
+	glm.vec3.add(temp,glm.vec3.fromValues(camPos[0],camPos[1],camPos[2]),
+	glm.vec3.fromValues(
+		camx*Math.cos(camRot[1])-camy*Math.sin(camRot[1]),0,
+		camy*Math.cos(camRot[1])+camx*Math.sin(camRot[1])));
+	console.log(temp);
+
+	camPos[0] = temp[0];
+	camPos[1] = temp[1];
+	camPos[2] = temp[2];
+
 
 	if (held.get("q")){
 		camRot[1] -= 5 * deltaTime
