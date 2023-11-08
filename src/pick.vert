@@ -8,9 +8,11 @@ struct VSOut {
 }
 
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
+@group(0) @binding(1) var<uniform> pickUniforms: u32;
 
 @vertex
-fn main(@location(0) inPos: vec3f) -> VSOut {
+fn main(@location(0) inPos: vec3f,
+        @location(1)  @interpolate(flat) inColor: u32) -> VSOut {
     var vsOut: VSOut;
     vsOut.Position = uniforms.projMatrix*vec4f(inPos, 1);
     vsOut.color = 4096;

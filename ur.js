@@ -1,6 +1,16 @@
 //ok, smart guy, let's see you take a crack at it!!!
 //🧩 🧩
 
+//NOTES FOR FUTURE REFERENCE:
+//11/8/23
+//PICK PASS IS OUT
+//replace that dumb bullshit with a
+//system that accounts for the data
+//established for rendering being
+//utilized for selecting objects instead
+//of trying some fancy rendering tricks 
+
+
 import * as glm from './src/glm/index.js';
 
 var canvas; var adapter; var device;
@@ -20,6 +30,7 @@ var encoder;
 var bindGroup = [];
 
 var transformBuffer;
+var transformBuffer2;
 var bindGroupLayout = [];
 
 var renderPassDesc;
@@ -237,20 +248,9 @@ async function createBuffer(array,usage){
 
 var scene;
 
-var pickPipeline;
-var pickBindGroup = [];
-
 var objIndex = 0;
 
-var pickBindGroupLayout;
-
 var depthTexDesc;
-
-var pickBindGroupLayoutEntry = [{
-			binding: 0,
-			visibility: GPUShaderStage.FRAGMENT,
-			texture: { sampleType: "uint" }
-	}];
 	
 async function initializeScene(){
 	
@@ -324,67 +324,16 @@ async function initializeScene(){
 	//console.log(bindGroupLayout.length);
 
 	
-
-	var pickBindGroupLayoutDescriptor = { entries: [
-		{
-			binding: 0, 
-			visibility: GPUShaderStage.VERTEX,
-			buffer: { type: "uniform" }	
-		}
-		,
-		{
-			binding: 1,
-			visibility: GPUShaderStage.FRAGMENT,
-			buffer: { type: "uniform" }	
-		}
-	] };
-	pickBindGroupLayout = device.createBindGroupLayout(pickBindGroupLayoutDescriptor);
-
-	//create pick pipeline
 	var defVert;
 	var defFrag;
 
-	var pickFrag;
-	var pickVert;
-
 	await fetch("./src/default.vert").then((response) => response.text()).then((shader) => {defVert = shader;});	
 	await fetch("./src/default.frag").then((response) => response.text()).then((shader) => {defFrag = shader;});	
-
-	await fetch("./src/pick.frag").then((response) => response.text()).then((shader) => {pickFrag = shader;});	
-	await fetch("./src/pick.vert").then((response) => response.text()).then((shader) => {pickVert = shader;});	
 	
 	var pipelineLayoutDesc = {bindGroupLayouts: bindGroupLayout};
 	var layout = device.createPipelineLayout(pipelineLayoutDesc);
 
-	var pickPipelineLayoutDesc = {bindGroupLayouts: [pickBindGroupLayout]};
-	var pickLayout = device.createPipelineLayout(pickPipelineLayoutDesc);
 
-
-	const pickPipelineDesc = {
-		layout: pickLayout,
-		vertex: {
-			module: device.createShaderModule({code:pickVert}),
-			entryPoint: 'main',
-			buffers: [posBufDesc]
-		},
-		fragment: {
-			module: device.createShaderModule({code:pickFrag}),
-			entryPoint: 'main',
-			targets: [{format: 'r32uint'}]
-		},
-		primitive: {
-			frontFace: 'cw',
-			cullMode: 'back',
-			topology: 'triangle-list'
-		},
-		depthStencil: {
-			depthWriteEnabled: true,
-			depthCompare: 'less',
-			format: 'depth24plus-stencil8'
-		}
-	};
-
-	pickPipeline = device.createRenderPipeline(pickPipelineDesc);
 
 	/*const texBindGroup = device.createBindGroup({
 		layout: bindGroupLayout[1],
@@ -551,7 +500,6 @@ async function updatePositionBuffers(){
 			newcol.push(models[i].col[cur*3+1])
 			newcol.push(models[i].col[cur*3+2])
 			
-
 			newidx.push(j);
 			++j;
 		}
@@ -601,7 +549,7 @@ function writeTexture(data,w,h,format){
 	const texture = device.createTexture({
 		size: { width: w, height: h },
 		format: format,
-		usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+		usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.COPY_SRC,
 	  });
 	  device.queue.writeTexture({ texture }, data, {bytesPerRow:w*4}, { width: w, height: h });
 	  return texture;
@@ -623,18 +571,8 @@ async function render(){
 		storeOp: 'store'
 	};
 
-	var pickTexture = device.createTexture({
-		size: [context.getCurrentTexture().width,context.getCurrentTexture().height,1], 
-		format: 'r32uint',
-		usage: GPUTextureUsage.COPY_SRC | GPUTextureUsage.RENDER_ATTACHMENT
-	});
+
 	
-	var pickColorAttachment = {
-		view: pickTexture.createView(),
-		clearValue: {r:0,g:0,b:0,a:1},
-		loadOp: 'clear',
-		storeOp: 'store'
-	};
 
 	const depthAttachment = {
 		view: depthTexView,
@@ -646,30 +584,14 @@ async function render(){
 		stencilStoreOp: 'store'
 	}
 
-	var pickDepthTex = device.createTexture(depthTexDesc);
-	var pickDepthTexView = pickDepthTex.createView();
-
-	const pickDepthAttachment = {
-		view: pickDepthTexView,
-		depthClearValue: 1,
-		depthLoadOp: 'clear',
-		depthStoreOp: 'store',
-		stencilClearValue: 0,
-		stencilLoadOp: 'clear',
-		stencilStoreOp: 'store'
-	}
 
 	renderPassDesc = {
 		colorAttachments: [colorAttachment],
 		depthStencilAttachment: depthAttachment
 	};
-	
-	var pickRenderPassDesc = {
-		colorAttachments: [pickColorAttachment],
-		depthStencilAttachment: pickDepthAttachment
-	};
-    
+	    
     transformBuffer = device.createBuffer(transformBufferDescriptor)
+    transformBuffer2 = device.createBuffer(transformBufferDescriptor)
 	
 	const sampler = device.createSampler({
 		addressModeU: 'repeat',
@@ -683,18 +605,36 @@ async function render(){
         offset: 0,
         size: transformSize
     };
+
+	const transformBufferBinding2 = {
+        buffer: transformBuffer2,
+        offset: 0,
+        size: transformSize
+    };
     const transformBufferBindGroupEntry = [{
         binding: 0,
         resource: transformBufferBinding
     }];
 
+	const transformBufferBindGroupEntry2 = [{
+        binding: 1,
+        resource: transformBufferBinding2
+    }];
+
 	bindGroup= [];
 
-	var pickEncoder = device.createCommandEncoder();
+
+	var ids = Array();
+
+	var idSrc = Array();
+
+	var idBuffer = Array();
 
 	for(var i=0;i<models.length;++i){
 
 		const id = new Uint8Array([Math.floor((i+1)/16777216)%256,Math.floor((i+1)/65536)%256,Math.floor((i+1)/256)%256,(i+1)%256]);
+
+		ids.push(id);
 
 		var depthid = device.createTexture({
 			size: { width: 1, height: 1 },
@@ -703,40 +643,30 @@ async function render(){
 		});
 		depthid = writeTexture(id,1,1,"r32uint");
 		  
-		var idBuffer = await device.createBuffer({
+		idBuffer.push(await device.createBuffer({
 			size: 4*4,
 			usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-		});
+		}));
 
-		var idSrc = await device.createBuffer({
+		idSrc.push(await device.createBuffer({
 			size: 4*4,
 			usage: GPUBufferUsage.COPY_SRC,
 			mappedAtCreation: true
-		});
-		var bla = await idSrc.getMappedRange();
+		}));
+		var bla = await idSrc[i].getMappedRange();
 		new Uint32Array(bla).set(id);
 
 		//console.log(bla.slice(0)); //THIS IS WORKING
-		await idSrc.unmap();
-		pickEncoder.copyBufferToBuffer(idSrc, 0, idBuffer, 0, 4*4);
+		await idSrc[i].unmap();
 
 		
 		//await idBuffer.mapAsync(GPUMapMode.READ);
 
 		const idBufferBinding = {
-			buffer: idBuffer,
+			buffer: idBuffer[i],
 			offset: 0,
 			size: 4*4
 		};
-	
-		pickBindGroup.push(device.createBindGroup({
-			layout: pickBindGroupLayout,
-			entries: [
-				{binding: 0, resource: transformBufferBinding},
-				{binding: 1, resource: idBufferBinding},
-
-			]
-		}));
 
 		//console.log(bindGroupLayout[1]!=null);
 		const texBindGroup = device.createBindGroup({
@@ -769,82 +699,14 @@ async function render(){
 
 	glm.mat4.translate(modelViewProjectionMatrix,modelViewProjectionMatrix,glm.vec3.fromValues(camPos[0],camPos[1],camPos[2]));
 
-		
-	const pickpass = pickEncoder.beginRenderPass(pickRenderPassDesc);
-
-	//PICK PASS
-	
-	for(var i = 0;i<models.length;++i){		
-
-
-		objIndex = i;
-
-		pickpass.setPipeline(pickPipeline);
-		pickpass.setBindGroup(0,pickBindGroup[i]);
-
-		pickpass.setViewport(0,0,context.getCurrentTexture().width,context.getCurrentTexture().height,0,1);
-		pickpass.setScissorRect(0,0,context.getCurrentTexture().width,context.getCurrentTexture().height);
-
-
-		//console.log("drawing object "+i);
-
-		//pickpass.setViewport(0,0,context.getCurrentTexture().width,context.getCurrentTexture().height,0,1);
-		//pickpass.setScissorRect(0,0,context.getCurrentTexture().width,context.getCurrentTexture().height);
-
-		device.queue.writeBuffer(transformBuffer, 0, modelViewProjectionMatrix);
-
-		//pass.setPipeline(pipelines[i]);
-		pickpass.setIndexBuffer(modelsMeta[i].idxBuf,'uint16');
-
-		//pass.setBindGroup(0,i);
-		//pass.setBindGroup(1,bindGroup[i*2+1]);
-
-		pickpass.setVertexBuffer(0, modelsMeta[i].posBuf);
-		pickpass.setVertexBuffer(1, modelsMeta[i].colBuf);
-		pickpass.setVertexBuffer(2, modelsMeta[i].uvBuf);
-		pickpass.drawIndexed(models[i].idx.length,1);	
-		
-	}
-
-	pickpass.end();	
-	
-	var pickBuffer = await device.createBuffer({
-		size: 256,
-		usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST
-	});
-
-
-	pickEncoder.copyTextureToBuffer({
-		texture: pickTexture,
-		origin: {
-			x: 640,	//GET MOUSE POSITION
-			y: 640	//AND PUT IT IN HERE
-		}	// should return the id when you 
-			// FIGURE OUT HOW THE FUCK TO GET
-			// IT TO RECOGNIZE IT :))
-
-			// i.e. DON'T CHANGE THIS YOU DUMB BASTARD
-	}, {
-		buffer: pickBuffer,
-		bytesPerRow: 256,
-	},{
-		width: 1, 
-		height:1
-	}
-	
-	);
-
-	console.log()
-
-	await device.queue.submit([pickEncoder.finish()]);
-
 	encoder = await device.createCommandEncoder();
 
 	const pass = encoder.beginRenderPass(renderPassDesc);
 
+
+
 	for(var i = 0;i<models.length;++i){	
 
-		//console.log("PICK PASS: drawing object "+i);
 
 		pass.setViewport(0,0,context.getCurrentTexture().width,context.getCurrentTexture().height,0,1);
 		pass.setScissorRect(0,0,context.getCurrentTexture().width,context.getCurrentTexture().height);
@@ -868,6 +730,10 @@ async function render(){
 
 	await device.queue.submit([encoder.finish()]);
 
+
+	
+	console.log()
+
 	requestAnimationFrame(render);
 
 	deltaTime = Date.now() / 1000 - now;
@@ -875,12 +741,6 @@ async function render(){
 
 	now = Date.now() / 1000;
 	
-	await pickBuffer.mapAsync(GPUMapMode.READ);
-	var selectedid = await pickBuffer.getMappedRange();
-	console.log(selectedid.slice(0));
-
-	await pickBuffer.unmap();
-
 }
 
 var deltaTime = 0;
