@@ -654,47 +654,103 @@ async function render(){
 
 
 	for(var i = 0;i<models.length;++i){	
-
+		if(typeof models[i].idx==="undefined"){}
+		else{
 		//calculate raycast from camera to scene
-		for(var j=0;j<models[i].idx.length;j+=3){
-			var startPos = glm.vec3.fromValues(camPos[0],camPos[1],camPos[2]);
-			var rotation = glm.vec3.fromValues(camRot[0],camRot[1],camRot[2]);
-			var len = 10000;
+			for(var j=0;j<models[i].idx.length;j+=3){
+				var startPos = glm.vec3.fromValues(
+					camPos[0]+.5,camPos[1]+.1,camPos[2]
+					);
+				var rotation = glm.vec3.fromValues(camRot[0],camRot[1],camRot[2]);
+				var len = 100;
 
-			var endPos = glm.vec3.create();
+				var endPos = 
+					glm.vec3.create();
+					//glm.vec3.fromValues(0,0,1000);
 
-			glm.vec3.add(endPos,startPos,glm.vec3.fromValues(len*Math.sin(camRot[1]),0,len*Math.cos(camRot[1])));
+				glm.vec3.add(endPos,startPos,glm.vec3.fromValues(len*Math.sin(camRot[1]),0,len*Math.cos(camRot[1])));
 
-			//check if triangle intersects with line
+				//check if triangle intersects with line
 
-			var v1 = glm.vec3.fromValues(models[i].pos[models[i].idx[j]*3],models[i].pos[models[i].idx[j]*3+1],models[i].pos[models[i].idx[j]*3+2]);
-			var v2 = glm.vec3.fromValues(models[i].pos[models[i].idx[j+1]*3],models[i].pos[models[i].idx[j+1]*3+1],models[i].pos[models[i].idx[j+1]*3+2]);
-			var v3 = glm.vec3.fromValues(models[i].pos[models[i].idx[j+2]*3],models[i].pos[models[i].idx[j+2]*3+1],models[i].pos[models[i].idx[j+2]*3+2]);
+				var v1 = glm.vec3.fromValues(models[i].pos[models[i].idx[j]*3],models[i].pos[models[i].idx[j]*3+1],models[i].pos[models[i].idx[j]*3+2]);
+				var v2 = glm.vec3.fromValues(models[i].pos[models[i].idx[j+1]*3],models[i].pos[models[i].idx[j+1]*3+1],models[i].pos[models[i].idx[j+1]*3+2]);
+				var v3 = glm.vec3.fromValues(models[i].pos[models[i].idx[j+2]*3],models[i].pos[models[i].idx[j+2]*3+1],models[i].pos[models[i].idx[j+2]*3+2]);
 
-			var e1 = glm.vec3.create();
-			var e2 = glm.vec3.create();
+				var u = glm.vec3.create();
+				var v = glm.vec3.create();
 
-			glm.vec3.subtract(e1,v2,v1);
-			glm.vec3.subtract(e2,v3,v1);
+				glm.vec3.subtract(u,v2,v1);
+				glm.vec3.subtract(v,v3,v1);
 
-			var n = glm.vec3.create();
-			glm.vec3.cross(n,e1,e2);
+				var n = glm.vec3.create();
+				glm.vec3.cross(n,u,v);
 
-			console.log(n)
+				if (n==glm.vec3.create()) {console.log("degen tri"); continue;}
 
-			var d2 = glm.vec3.create();
+				var dir = glm.vec3.create();
+				glm.vec3.subtract(dir,endPos,startPos);
 
-			glm.vec3.subtract(d2,endPos,startPos);
+				var w0 = glm.vec3.create();
+				glm.vec3.subtract(w0,startPos,v1);
 
-			//console.log(glm.vec3.dot(n,d2));
+				var a = -glm.vec3.dot(n,w0);
+				var b = glm.vec3.dot(n,dir);
+				if(Math.abs(b) < 0.01){
+					if(a==0){
+						//console.log("parallel");
+						continue;}
+					else{
+						//console.log("not intersecting");
+						continue;}
+				}
 
-			//console.log(j+": "+v1);
-			//console.log(j+1+": "+v2);
-			//console.log(j+2+": "+v3);
+				var r = a/b;
+				if (r < 0 || r > 1){
+					//console.log("not intersecting");
+					continue;
+				}
 
-			//console.log(endPos);
+				var rv = glm.vec3.fromValues(r,r,r);
+
+				var rd = glm.vec3.create();
+				glm.vec3.multiply(rd,rv,dir);
+
+				var ii = glm.vec3.create();
+				glm.vec3.add(ii,startPos,rd);
+
+				var uu = glm.vec3.dot(u,u);
+				var uv = glm.vec3.dot(u,v);
+				var vv = glm.vec3.dot(v,v);
+				
+				var w = glm.vec3.create();
+				glm.vec3.subtract(w,ii,v1);
+
+				var wu = glm.vec3.dot(w,u);
+				var wv = glm.vec3.dot(w,v);
+
+				var d = uv * uv - uu * vv;
+
+				var s = (uv*wv-vv*wu) / d;
+				if(s < 0 || s > 1){
+					//console.log("not intersecting");
+					continue;
+				}
+				var t = (uv*wu-uu*wv) / d;
+				if(t < 0 || t > 1){
+					//console.log("not intersecting");
+					continue;
+				}
+
+				console.log("intersecting with object: "+i);
+				
+
+				//console.log(j+": "+v1);
+				//console.log(j+1+": "+v2);
+				//console.log(j+2+": "+v3);
+
+				//console.log(endPos);
+			}
 		}
-
 		pass.setViewport(0,0,context.getCurrentTexture().width,context.getCurrentTexture().height,0,1);
 		pass.setScissorRect(0,0,context.getCurrentTexture().width,context.getCurrentTexture().height);
 
