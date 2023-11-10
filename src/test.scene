@@ -46,7 +46,7 @@
 			"renderer":{
 				"modelSource": "./src/floor.json",
 				"materials": [{
-					"vertex": "./src/test.vert",
+					"vertex": "./src/default.vert",
 					"fragment": "./src/default.frag",
 					"customVertexCode": false,
 					"customFragmentCode": false
