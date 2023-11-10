@@ -111,17 +111,17 @@ async function init(){
 	//tex_window = open("", "Texture Editor", params);
 	
 	
-	tex_canvas = document.createElement("canvas",HTMLCanvasElement);
+	//tex_canvas = document.createElement("canvas",HTMLCanvasElement);
 
-	tex_window.document.body.style = "margin: 0;";
-	tex_window.document.body.appendChild(tex_canvas);
+	//tex_window.document.body.style = "margin: 0;";
+	//tex_window.document.body.appendChild(tex_canvas);
 	//tex_canvas.outerHTML = "<canvas id='cv'></canvas>";
 
-	tex_context = tex_canvas.getContext('2d');
+	//tex_context = tex_canvas.getContext('2d');
 
 
-	tex_canvas.width = 512;
-	tex_canvas.height = 512;
+	//tex_canvas.width = 512;
+	//tex_canvas.height = 512;
 
 	var imgData = new ImageData(
 		tex_image,
@@ -130,7 +130,7 @@ async function init(){
 		undefined
 	);
 
-	tex_context.putImageData(imgData,0,0);
+	//tex_context.putImageData(imgData,0,0);
 
 	queue = device.queue;
 	context = canvas.getContext("webgpu");
@@ -429,7 +429,7 @@ async function ur(){
 
 	await init();
 
-	tex_window.onmousedown = function(e) {
+	/*tex_window.onmousedown = function(e) {
 		isPainting = true;
 		startX = e.clientX;
 		startY = e.clientY;
@@ -441,7 +441,7 @@ async function ur(){
 		tex_context.beginPath();
 	};
 	
-	tex_window.onmousemove = draw;
+	tex_window.onmousemove = draw;*/
 
 	await initializeScene();
 
@@ -887,7 +887,7 @@ async function gameCode(){
 
 	//console.log(tex_window!=null);
 
-	if(!tex_window.closed){
+	/*if(!tex_window.closed){
 
 		var blabla = tex_context.getImageData(0,0,512,512).data;
 		
@@ -899,7 +899,7 @@ async function gameCode(){
 
 		models[0].materials[0].albedo = writeTexture(txarray,512,512,'rgba8unorm');
 
-	}
+	}*/
 	
 	models[1].materials[0].albedo = createCheckerColorTexture(1,0,1,1);
 
