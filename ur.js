@@ -106,8 +106,10 @@ async function init(){
 
 	let params = `scrollbars=no,resizable=no,status=no,location=no,toolbar=no,menubar=no,
 	width=512,height=512,left=-1000,top=-1000`;
-	tex_window = open("", "Texture Editor", params);
-
+	
+	//TODO: add code to make this open up whenever an item is selected
+	//tex_window = open("", "Texture Editor", params);
+	
 	
 	tex_canvas = document.createElement("canvas",HTMLCanvasElement);
 
