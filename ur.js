@@ -409,7 +409,7 @@ async function initializeScene(){
 				uv: model.uv,
 				belongsToPipeline: i,
 				materials: [{
-					albedo: createSolidColorTexture(1,1,1,1)
+					albedo: createSolidColorTexture(0.5,0.5,0.5,1)
 				}]
 			})
 			}
@@ -862,6 +862,10 @@ async function input(){
 		mdy += e.movementY * .5;	
 	};
 
+	if(document.hidden){
+		mdx = 0; mdy = 0;
+	}
+
 	document.onkeydown = (event) =>{
 		  const keyName = event.key;
 	  
@@ -950,7 +954,14 @@ async function gameCode(){
 	var temp = glm.vec3.fromValues(0,0,0);
 
 	if(held.get("rclick")){
+
+		var camRotOld = camRot;
+
 		camRot[1] += 5 * deltaTime * mdx;
+	
+		if(!isNaN(camRot[0])&&!isNaN(camRot[1])&&!isNaN(camRot[2])){
+			camRot = camRotOld;
+		}
 	}
 
 	glm.vec3.add(temp,glm.vec3.fromValues(camPos[0],camPos[1],camPos[2]),
@@ -958,9 +969,13 @@ async function gameCode(){
 		camx*Math.cos(camRot[1])-camy*Math.sin(camRot[1]),0,
 		camy*Math.cos(camRot[1])+camx*Math.sin(camRot[1])));
 
-	camPos[0] = temp[0];
-	camPos[1] = temp[1];
-	camPos[2] = temp[2];
+	console.log(camRot);
+
+		camPos[0] = temp[0];
+		camPos[1] = temp[1];
+		camPos[2] = temp[2];
+	
+		
 	}
 
 ur();
