@@ -9,7 +9,8 @@
 //established for rendering being
 //utilized for selecting objects instead
 //of trying some fancy rendering tricks 
-
+//11/9/23
+//
 
 import * as glm from './src/glm/index.js';
 
@@ -447,6 +448,7 @@ async function ur(){
 
 	render();
 }
+	
 
 async function updatePositionBuffers(){
 
@@ -482,11 +484,13 @@ async function updatePositionBuffers(){
 			}
 	}
 
+
 	modelsMeta = [];
 	for(var i = 0;i<models.length;++i){
 		var newpos = Array();
 		var newcol = Array();
 		var newidx = Array();
+
 		for(var j=0;j<models[i].idx.length;){
 
 			//console.log("triangle"+j/3);
@@ -656,23 +660,31 @@ async function render(){
 
 
 	for(var i = 0;i<models.length;++i){	
+		models[i].col = ogModels[i].col.slice();
 		if(typeof models[i].idx==="undefined"){}
 		else{
 		//calculate raycast from camera to scene
 			for(var j=0;j<models[i].idx.length;j+=3){
+
+				//TODO: make this a separate class
+
 				var startPos = glm.vec3.fromValues(
-					camPos[0]+.5,camPos[1]+.1,camPos[2]
+					-camPos[0],camPos[1],camPos[2]
 					);
 				var rotation = glm.vec3.fromValues(camRot[0],camRot[1],camRot[2]);
-				var len = 100;
+				var len = 1000000;
 
 				var endPos = 
 					glm.vec3.create();
 					//glm.vec3.fromValues(0,0,1000);
 
-				glm.vec3.add(endPos,startPos,glm.vec3.fromValues(len*Math.sin(camRot[1]),0,len*Math.cos(camRot[1])));
+
+				glm.vec3.add(endPos,startPos,glm.vec3.fromValues(len*Math.sin(rotation[1]),0,len*Math.cos(rotation[1])));
 
 				//check if triangle intersects with line
+				
+				var dir = glm.vec3.create();
+				glm.vec3.subtract(dir,endPos,startPos);
 
 				var v1 = glm.vec3.fromValues(models[i].pos[models[i].idx[j]*3],models[i].pos[models[i].idx[j]*3+1],models[i].pos[models[i].idx[j]*3+2]);
 				var v2 = glm.vec3.fromValues(models[i].pos[models[i].idx[j+1]*3],models[i].pos[models[i].idx[j+1]*3+1],models[i].pos[models[i].idx[j+1]*3+2]);
@@ -689,22 +701,21 @@ async function render(){
 
 				if (n==glm.vec3.create()) {console.log("degen tri"); continue;}
 
-				var dir = glm.vec3.create();
-				glm.vec3.subtract(dir,endPos,startPos);
-
 				var w0 = glm.vec3.create();
 				glm.vec3.subtract(w0,startPos,v1);
 
 				var a = -glm.vec3.dot(n,w0);
 				var b = glm.vec3.dot(n,dir);
-				if(Math.abs(b) < 0.01){
+				/*if(Math.abs(b) < 0.000000001){
 					if(a==0){
 						//console.log("parallel");
 						continue;}
 					else{
 						//console.log("not intersecting");
 						continue;}
-				}
+				}*/
+
+
 
 				var r = a/b;
 				if (r < 0 || r > 1){
@@ -743,8 +754,20 @@ async function render(){
 					continue;
 				}
 
-				console.log("intersecting with object: "+i);
+				//console.log("intersecting with object: "+i);
 				
+				models[i].col[models[i].idx[j]*3] = 1
+				models[i].col[models[i].idx[j]*3+1] = 0
+				models[i].col[models[i].idx[j]*3+2] = 0
+
+				models[i].col[models[i].idx[j+1]*3] = 1
+				models[i].col[models[i].idx[j+1]*3+1] = 0
+				models[i].col[models[i].idx[j+1]*3+2] = 0
+
+				models[i].col[models[i].idx[j+2]*3] = 1
+				models[i].col[models[i].idx[j+2]*3+1] = 0
+				models[i].col[models[i].idx[j+2]*3+2] = 0
+
 
 				//console.log(j+": "+v1);
 				//console.log(j+1+": "+v2);
@@ -906,6 +929,11 @@ async function gameCode(){
 	camx = camx + (0-camx) * .15;
 	camy = camy + (0-camy) * .15;
 
+	//console.log(camx+","+camy);
+
+	if(isNaN(camx)||Math.abs(camx)<0.001){camx = 0;}
+	if(isNaN(camy)||Math.abs(camy)<0.001){camy = 0;}
+
 	if (held.get("d")){
 		camx -= .5 * deltaTime
 	}
@@ -933,8 +961,6 @@ async function gameCode(){
 	camPos[0] = temp[0];
 	camPos[1] = temp[1];
 	camPos[2] = temp[2];
-	
-
-}
+	}
 
 ur();
