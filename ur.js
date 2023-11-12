@@ -9,8 +9,7 @@
 //established for rendering being
 //utilized for selecting objects instead
 //of trying some fancy rendering tricks 
-//11/9/23
-//
+
 
 import * as glm from './src/glm/index.js';
 
@@ -390,7 +389,7 @@ async function initializeScene(){
 				},
 				primitive: {
 					frontFace: 'cw',
-					cullMode: 'back',
+					cullMode: 'none',
 					topology: 'triangle-list'
 				},
 				depthStencil: {
@@ -578,9 +577,6 @@ async function render(){
 		storeOp: 'store'
 	};
 
-
-	
-
 	const depthAttachment = {
 		view: depthTexView,
 		depthClearValue: 1,
@@ -661,6 +657,7 @@ async function render(){
 
 	for(var i = 0;i<models.length;++i){	
 		models[i].col = ogModels[i].col.slice();
+
 		if(typeof models[i].idx==="undefined"){}
 		else{
 		//calculate raycast from camera to scene
@@ -685,6 +682,9 @@ async function render(){
 				
 				var dir = glm.vec3.create();
 				glm.vec3.subtract(dir,endPos,startPos);
+				//glm.vec3.normalize(dir,dir);
+
+				//console.log(dir);
 
 				var v1 = glm.vec3.fromValues(models[i].pos[models[i].idx[j]*3],models[i].pos[models[i].idx[j]*3+1],models[i].pos[models[i].idx[j]*3+2]);
 				var v2 = glm.vec3.fromValues(models[i].pos[models[i].idx[j+1]*3],models[i].pos[models[i].idx[j+1]*3+1],models[i].pos[models[i].idx[j+1]*3+2]);
@@ -699,14 +699,18 @@ async function render(){
 				var n = glm.vec3.create();
 				glm.vec3.cross(n,u,v);
 
-				if (n==glm.vec3.create()) {console.log("degen tri"); continue;}
+				//if (n==glm.vec3.create()) {console.log("degen tri"); continue;}
 
 				var w0 = glm.vec3.create();
 				glm.vec3.subtract(w0,startPos,v1);
 
 				var a = -glm.vec3.dot(n,w0);
 				var b = glm.vec3.dot(n,dir);
-				/*if(Math.abs(b) < 0.000000001){
+
+
+				if(b<0){continue;}
+					
+				/*if(Math.abs(b) < 0.00001){
 					if(a==0){
 						//console.log("parallel");
 						continue;}
@@ -718,7 +722,10 @@ async function render(){
 
 
 				var r = a/b;
-				if (r < 0 || r > 1){
+
+				//console.log(r);
+
+				if (r <= 0 || r >= 1){
 					//console.log("not intersecting");
 					continue;
 				}
@@ -744,36 +751,91 @@ async function render(){
 				var d = uv * uv - uu * vv;
 
 				var s = (uv*wv-vv*wu) / d;
-				if(s < 0 || s > 1){
+				if(s <= 0 || s >= 1){
 					//console.log("not intersecting");
 					continue;
 				}
 				var t = (uv*wu-uu*wv) / d;
-				if(t < 0 || t > 1){
+				if(t <= 0 || (s+t) >= 1){
 					//console.log("not intersecting");
 					continue;
 				}
 
 				//console.log("intersecting with object: "+i);
 				
-				models[i].col[models[i].idx[j]*3] = 1
-				models[i].col[models[i].idx[j]*3+1] = 0
-				models[i].col[models[i].idx[j]*3+2] = 0
+				//models[i].col[models[i].idx[j]*3] = 1
+				//models[i].col[models[i].idx[j]*3+1] = 0
+				//models[i].col[models[i].idx[j]*3+2] = 0
 
-				models[i].col[models[i].idx[j+1]*3] = 1
-				models[i].col[models[i].idx[j+1]*3+1] = 0
-				models[i].col[models[i].idx[j+1]*3+2] = 0
+				//models[i].col[models[i].idx[j+1]*3+1] = 1
+				//models[i].col[models[i].idx[j+1]*3+1] = 0
+				//models[i].col[models[i].idx[j+1]*3+2] = 0
 
-				models[i].col[models[i].idx[j+2]*3] = 1
-				models[i].col[models[i].idx[j+2]*3+1] = 0
-				models[i].col[models[i].idx[j+2]*3+2] = 0
+				//models[i].col[models[i].idx[j+2]*3+2] = 1
+				//models[i].col[models[i].idx[j+2]*3+1] = 0
+				//models[i].col[models[i].idx[j+2]*3+2] = 0
 
+				console.log("intersecting with triangle "+((j/3)+1)+" of object "+i);
 
 				//console.log(j+": "+v1);
 				//console.log(j+1+": "+v2);
 				//console.log(j+2+": "+v3);
 
 				//console.log(endPos);
+
+				//*/
+
+				/*var DdN = glm.vec3.dot(n,dir);
+				var sign;
+
+				if(DdN>0) {
+					sign = 1;
+					//console.log("backface"); continue;
+				}
+				else if(DdN<0){
+					sign = -1;
+					DdN = -DdN;
+				}
+				else{
+					continue;
+				}
+
+				var diff = glm.vec3.create();
+				glm.vec3.subtract(diff,startPos,v1);
+
+				glm.vec3.cross(v,v,diff);
+
+				var DdQxE2 = sign * glm.vec3.dot(v,diff);
+
+				if(DdQxE2<0){continue;}
+
+				glm.vec3.cross(u,u,diff);
+
+				var DdE1xQ = sign * glm.vec3.dot(u,diff);
+
+				if(DdE1xQ<0){continue;}
+
+				if(DdQxE2 + DdE1xQ > DdN){continue;}
+
+				var QdN = -sign * glm.vec3.dot(diff,n);
+
+				if(QdN <= 0) {continue;}
+
+				console.log("ray intersects triangle "+((j/3)+1)+" at object "+i);
+
+				models[i].col[models[i].idx[j]*3] = 1
+				//models[i].col[models[i].idx[j]*3+1] = 0
+				//models[i].col[models[i].idx[j]*3+2] = 0
+
+				//models[i].col[models[i].idx[j+1]*3] = 1
+				//models[i].col[models[i].idx[j+1]*3+1] = 0
+				//models[i].col[models[i].idx[j+1]*3+2] = 0
+
+				//models[i].col[models[i].idx[j+2]*3] = 1
+				//models[i].col[models[i].idx[j+2]*3+1] = 0
+				//models[i].col[models[i].idx[j+2]*3+2] = 0*/
+
+
 			}
 		}
 		pass.setViewport(0,0,context.getCurrentTexture().width,context.getCurrentTexture().height,0,1);
@@ -826,7 +888,7 @@ function clicked(e) {
 
 			if (!document.pointerLockElement) {
 				canvas.requestPointerLock({
-				  unadjustedMovement: true,
+				  unadjustedMovement: false,
 				});
 			  }    
 			}
@@ -959,9 +1021,6 @@ async function gameCode(){
 
 		camRot[1] += 5 * deltaTime * mdx;
 	
-		if(!isNaN(camRot[0])&&!isNaN(camRot[1])&&!isNaN(camRot[2])){
-			camRot = camRotOld;
-		}
 	}
 
 	glm.vec3.add(temp,glm.vec3.fromValues(camPos[0],camPos[1],camPos[2]),
@@ -969,7 +1028,7 @@ async function gameCode(){
 		camx*Math.cos(camRot[1])-camy*Math.sin(camRot[1]),0,
 		camy*Math.cos(camRot[1])+camx*Math.sin(camRot[1])));
 
-	console.log(camRot);
+	//console.log(camRot);
 
 		camPos[0] = temp[0];
 		camPos[1] = temp[1];
