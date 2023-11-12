@@ -868,7 +868,7 @@ async function input(){
 	}
 
 	document.oncontextmenu = (e) => {
-
+		e.preventDefault();
 	}
 	
 	document.onmousemove = (e) => {
