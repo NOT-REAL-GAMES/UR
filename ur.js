@@ -1,6 +1,8 @@
 //ok, smart guy, let's see you take a crack at it!!!
 //🧩 🧩
 
+//
+
 //NOTES FOR FUTURE REFERENCE:
 //11/8/23
 //PICK PASS IS OUT
@@ -9,7 +11,6 @@
 //established for rendering being
 //utilized for selecting objects instead
 //of trying some fancy rendering tricks 
-
 
 import * as glm from './src/glm/index.js';
 
@@ -471,11 +472,15 @@ async function updatePositionBuffers(){
 				models[i].pos = scale(models[i].pos,scl);
 								
 				models[i].pos = move(models[i].pos,pos);
+
 				
 				var origin = glm.vec3.fromValues(tf.position[0],tf.position[1],tf.position[2]);
 
 				models[i].pos = rotate(models[i].pos,glm.vec3.fromValues(
 					tf.rotation[0]%360,tf.rotation[1]%360,tf.rotation[2]%360),origin);
+
+
+				models[i].pos = move(models[i].pos,camPos);
 
 				glm.mat4.fromQuat(mat,rot);
 
@@ -646,7 +651,7 @@ async function render(){
 	glm.mat4.rotateY(modelViewProjectionMatrix,modelViewProjectionMatrix,camRot[1]);
 	glm.mat4.rotateZ(modelViewProjectionMatrix,modelViewProjectionMatrix,camRot[2]);
 
-	glm.mat4.translate(modelViewProjectionMatrix,modelViewProjectionMatrix,glm.vec3.fromValues(camPos[0],camPos[1],camPos[2]));
+	glm.mat4.translate(modelViewProjectionMatrix,modelViewProjectionMatrix,glm.vec3.create());
 
 	encoder = await device.createCommandEncoder();
 
@@ -664,9 +669,7 @@ async function render(){
 
 				//TODO: make this a separate class
 
-				var startPos = glm.vec3.fromValues(
-					-camPos[0],camPos[1],camPos[2]
-					);
+				var startPos = glm.vec3.fromValues(camPos[0],camPos[1],camPos[2]);
 				var rotation = glm.vec3.fromValues(-camRot[0],camRot[1],camRot[2]);
 				var len = 1000000;
 
@@ -689,6 +692,10 @@ async function render(){
 				var v1 = glm.vec3.fromValues(models[i].pos[models[i].idx[j]*3],models[i].pos[models[i].idx[j]*3+1],models[i].pos[models[i].idx[j]*3+2]);
 				var v2 = glm.vec3.fromValues(models[i].pos[models[i].idx[j+1]*3],models[i].pos[models[i].idx[j+1]*3+1],models[i].pos[models[i].idx[j+1]*3+2]);
 				var v3 = glm.vec3.fromValues(models[i].pos[models[i].idx[j+2]*3],models[i].pos[models[i].idx[j+2]*3+1],models[i].pos[models[i].idx[j+2]*3+2]);
+
+				glm.vec3.subtract(v1,v1,glm.vec3.fromValues(-camPos[0],-camPos[1],camPos[2]));
+				glm.vec3.subtract(v2,v2,glm.vec3.fromValues(-camPos[0],-camPos[1],camPos[2]));
+				glm.vec3.subtract(v3,v3,glm.vec3.fromValues(-camPos[0],-camPos[1],camPos[2]));
 
 				var u = glm.vec3.create();
 				var v = glm.vec3.create();
@@ -761,29 +768,7 @@ async function render(){
 					continue;
 				}
 
-				//console.log("intersecting with object: "+i);
-				
-				//console.log(models[i].idx[j]+","+models[i].idx[j+1]+","+models[i].idx[j+2]);
-
-				//models[i].col[(models[i].idx[j]*3)] = 1
-				//models[i].col[models[i].idx[j]*3+1] = 0
-				//models[i].col[models[i].idx[j]*3+2] = 0
-
-				//models[i].col[models[i].idx[j+1]*3] = 1
-				//models[i].col[models[i].idx[j+1]*3+1] = 0
-				//models[i].col[models[i].idx[j+1]*3+2] = 0
-
-				//models[i].col[models[i].idx[j+2]*3] = 1
-				//models[i].col[models[i].idx[j+2]*3+1] = 0
-				//models[i].col[models[i].idx[j+2]*3+2] = 0
-
 				console.log("intersecting with triangle "+((j/3)+1)+" of object "+i);
-
-				//console.log(j+": "+v1);
-				//console.log(j+1+": "+v2);
-				//console.log(j+2+": "+v3);
-
-				//console.log(endPos);
 
 				//*/
 			}
