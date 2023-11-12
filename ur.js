@@ -97,7 +97,6 @@ const draw = (e) => {
 async function init(){
 	now = Date.now();
 
-
 	canvas = document.querySelector("#ur");
 	adapter = await navigator.gpu.requestAdapter();
 	device = await adapter.requestDevice({
@@ -668,15 +667,16 @@ async function render(){
 				var startPos = glm.vec3.fromValues(
 					-camPos[0],camPos[1],camPos[2]
 					);
-				var rotation = glm.vec3.fromValues(camRot[0],camRot[1],camRot[2]);
+				var rotation = glm.vec3.fromValues(-camRot[0],camRot[1],camRot[2]);
 				var len = 1000000;
 
 				var endPos = 
 					glm.vec3.create();
 					//glm.vec3.fromValues(0,0,1000);
 
+					///57.296
 
-				glm.vec3.add(endPos,startPos,glm.vec3.fromValues(len*Math.sin(rotation[1]),0,len*Math.cos(rotation[1])));
+				glm.vec3.add(endPos,startPos,glm.vec3.fromValues(len*Math.sin(rotation[1]),len*Math.sin(rotation[0]),len*Math.cos(rotation[1])));
 
 				//check if triangle intersects with line
 				
@@ -763,15 +763,17 @@ async function render(){
 
 				//console.log("intersecting with object: "+i);
 				
-				//models[i].col[models[i].idx[j]*3] = 1
+				//console.log(models[i].idx[j]+","+models[i].idx[j+1]+","+models[i].idx[j+2]);
+
+				//models[i].col[(models[i].idx[j]*3)] = 1
 				//models[i].col[models[i].idx[j]*3+1] = 0
 				//models[i].col[models[i].idx[j]*3+2] = 0
 
-				//models[i].col[models[i].idx[j+1]*3+1] = 1
+				//models[i].col[models[i].idx[j+1]*3] = 1
 				//models[i].col[models[i].idx[j+1]*3+1] = 0
 				//models[i].col[models[i].idx[j+1]*3+2] = 0
 
-				//models[i].col[models[i].idx[j+2]*3+2] = 1
+				//models[i].col[models[i].idx[j+2]*3] = 1
 				//models[i].col[models[i].idx[j+2]*3+1] = 0
 				//models[i].col[models[i].idx[j+2]*3+2] = 0
 
@@ -784,58 +786,6 @@ async function render(){
 				//console.log(endPos);
 
 				//*/
-
-				/*var DdN = glm.vec3.dot(n,dir);
-				var sign;
-
-				if(DdN>0) {
-					sign = 1;
-					//console.log("backface"); continue;
-				}
-				else if(DdN<0){
-					sign = -1;
-					DdN = -DdN;
-				}
-				else{
-					continue;
-				}
-
-				var diff = glm.vec3.create();
-				glm.vec3.subtract(diff,startPos,v1);
-
-				glm.vec3.cross(v,v,diff);
-
-				var DdQxE2 = sign * glm.vec3.dot(v,diff);
-
-				if(DdQxE2<0){continue;}
-
-				glm.vec3.cross(u,u,diff);
-
-				var DdE1xQ = sign * glm.vec3.dot(u,diff);
-
-				if(DdE1xQ<0){continue;}
-
-				if(DdQxE2 + DdE1xQ > DdN){continue;}
-
-				var QdN = -sign * glm.vec3.dot(diff,n);
-
-				if(QdN <= 0) {continue;}
-
-				console.log("ray intersects triangle "+((j/3)+1)+" at object "+i);
-
-				models[i].col[models[i].idx[j]*3] = 1
-				//models[i].col[models[i].idx[j]*3+1] = 0
-				//models[i].col[models[i].idx[j]*3+2] = 0
-
-				//models[i].col[models[i].idx[j+1]*3] = 1
-				//models[i].col[models[i].idx[j+1]*3+1] = 0
-				//models[i].col[models[i].idx[j+1]*3+2] = 0
-
-				//models[i].col[models[i].idx[j+2]*3] = 1
-				//models[i].col[models[i].idx[j+2]*3+1] = 0
-				//models[i].col[models[i].idx[j+2]*3+2] = 0*/
-
-
 			}
 		}
 		pass.setViewport(0,0,context.getCurrentTexture().width,context.getCurrentTexture().height,0,1);
@@ -884,7 +834,9 @@ function clicked(e) {
           // middle mouse button
           break;
         case 2:
-			held.set("rclick",true);
+			if(!held.get("rclick")){
+				held.set("rclick",true);
+			}
 
 			if (!document.pointerLockElement) {
 				canvas.requestPointerLock({
@@ -905,13 +857,20 @@ function unclicked(e) {
         case 2:
 			held.set("rclick",false);
 
+			if(Math.abs(mmx)<1&&Math.abs(mmy)<1) {
+				console.log("open menu");
+			}
+
+			mmx = 0;
+			mmy = 0;
+
 			if (document.pointerLockElement) {
 				document.exitPointerLock();
 			}    
 			}
 }
 
-
+var mmx = 0,mmy = 0;
 var mdx = 0,mdy = 0;
 
 async function input(){
@@ -919,14 +878,28 @@ async function input(){
 	canvas.addEventListener('mousedown', clicked, false);
 	canvas.addEventListener('mouseup', unclicked, false);
 
+	document.oncontextmenu = (e) => {
+
+	}
+	
 	document.onmousemove = (e) => {
+		mmx += e.movementX * .5;
 		mdx += e.movementX * .5;
+		mmy += e.movementY * .5;	
 		mdy += e.movementY * .5;	
 	};
 
 	if(document.hidden){
 		mdx = 0; mdy = 0;
 	}
+
+	document.addEventListener("keydown", function(e) {
+		if ((window.navigator.userAgent.match("Mac") ? e.metaKey : e.ctrlKey)) {
+		  e.preventDefault();
+		  // Process the event here (such as click on submit button)
+		}
+	  }, false);
+	  
 
 	document.onkeydown = (event) =>{
 		  const keyName = event.key;
@@ -940,10 +913,12 @@ async function input(){
 			} else {
 				held.set(keyName,true);
 				//console.log(held.get(keyName));
+
 			}	  
 		};
 		
 		document.onkeyup = (event) =>{
+
 			const keyName = event.key;
 		
 		  if (keyName === "Control") {
@@ -951,6 +926,10 @@ async function input(){
 		  }
 		  
 		  if (event.ctrlKey) {
+
+			if(held.get("s")){
+				event.preventDefault();
+			}
 
 			alert(`Combination of ctrlKey + ${keyName}`);
 			} else {
@@ -966,9 +945,11 @@ async function input(){
 
 var camx = 0,camy = 0;
 
+var heldLast = new Map([]);
+
 async function gameCode(){
 		
-	setInterval(input,20);
+	await setTimeout(input,1000);
 
 	//gameObjects[0].transform.rotation[0] = now * 5;
 
@@ -1000,33 +981,38 @@ async function gameCode(){
 	if(isNaN(camx)||Math.abs(camx)<0.001){camx = 0;}
 	if(isNaN(camy)||Math.abs(camy)<0.001){camy = 0;}
 
-	if (held.get("d")){
-		camx -= .5 * deltaTime
-	}
-	if (held.get("a")){
-		camx += .5 * deltaTime
-	}
-	if (held.get("w")){
-		camy += .5 * deltaTime
-	}
-	if (held.get("s")){
-		camy -= .5 * deltaTime
-	}
-
-	var temp = glm.vec3.fromValues(0,0,0);
+	var temp = glm.vec3.create();
 
 	if(held.get("rclick")){
 
+		if (held.get("d")){
+			camx += .5 * deltaTime
+		}
+		if (held.get("a")){
+			camx -= .5 * deltaTime ;
+		}
+		if (held.get("w")){
+			camy += .5 * deltaTime
+		}
+		if (held.get("s")){
+			camy -= .5 * deltaTime
+		}
+
 		var camRotOld = camRot;
 
-		camRot[1] += 5 * deltaTime * mdx;
+		camRot[0] += .5 * deltaTime * mdy;
+		camRot[1] += .5 * deltaTime * mdx;
 	
 	}
 
+
+
 	glm.vec3.add(temp,glm.vec3.fromValues(camPos[0],camPos[1],camPos[2]),
 	glm.vec3.fromValues(
-		camx*Math.cos(camRot[1])-camy*Math.sin(camRot[1]),0,
-		camy*Math.cos(camRot[1])+camx*Math.sin(camRot[1])));
+		-camx*(Math.cos(camRot[1])) + camy*(-Math.sin(camRot[1])*Math.cos(camRot[0])),
+		camy*Math.sin(camRot[0]),
+		-camx*(Math.sin(camRot[1])) + camy*(Math.cos(camRot[1])*Math.cos(camRot[0]))));
+		//0));
 
 	//console.log(camRot);
 
@@ -1034,7 +1020,8 @@ async function gameCode(){
 		camPos[1] = temp[1];
 		camPos[2] = temp[2];
 	
-		
+		heldLast = held;
+
 	}
 
 ur();
