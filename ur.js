@@ -810,7 +810,6 @@ var deltaTime = 0;
 var held = new Map([]);
 
 function clicked(e) {
-	e.preventDefault();
 
     switch (e.button) {
         case 0:
@@ -863,6 +862,10 @@ async function input(){
 
 	canvas.addEventListener('mousedown', clicked, false);
 	canvas.addEventListener('mouseup', unclicked, false);
+
+	document.onmousedown = (e) => {
+		e.preventDefault();
+	}
 
 	document.oncontextmenu = (e) => {
 
