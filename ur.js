@@ -389,7 +389,7 @@ async function initializeScene(){
 				},
 				primitive: {
 					frontFace: 'cw',
-					cullMode: 'none',
+					cullMode: 'back',
 					topology: 'triangle-list'
 				},
 				depthStencil: {
@@ -445,7 +445,11 @@ async function ur(){
 
 	await initializeScene();
 
-	render();
+	await render();
+
+	setInterval(() => {
+		requestAnimationFrame(render);
+	}, 10);
 }
 	
 
@@ -480,7 +484,7 @@ async function updatePositionBuffers(){
 					tf.rotation[0]%360,tf.rotation[1]%360,tf.rotation[2]%360),origin);
 
 
-				models[i].pos = move(models[i].pos,camPos);
+				//models[i].pos = move(models[i].pos,camPos);
 
 				glm.mat4.fromQuat(mat,rot);
 
@@ -565,10 +569,17 @@ function writeTexture(data,w,h,format){
 	  return texture;
 }
 
+var ffs = glm.vec3.create();
+
+var firstcol = glm.vec3.create()
+var frontest = glm.vec3.create();
+
 async function render(){
 	
 	//console.clear();
 
+	//await setInterval(,500);
+	
 	await gameCode();
 
 	await updatePositionBuffers();
@@ -651,13 +662,15 @@ async function render(){
 	glm.mat4.rotateY(modelViewProjectionMatrix,modelViewProjectionMatrix,camRot[1]);
 	glm.mat4.rotateZ(modelViewProjectionMatrix,modelViewProjectionMatrix,camRot[2]);
 
-	glm.mat4.translate(modelViewProjectionMatrix,modelViewProjectionMatrix,glm.vec3.create());
+	glm.mat4.translate(modelViewProjectionMatrix,modelViewProjectionMatrix,camPos);
 
 	encoder = await device.createCommandEncoder();
 
 	const pass = encoder.beginRenderPass(renderPassDesc);
 
+	ffs = glm.vec3.create();
 
+	frontest = glm.vec3.fromValues(99999,99999,99999);
 
 	for(var i = 0;i<models.length;++i){	
 		models[i].col = ogModels[i].col.slice();
@@ -666,12 +679,14 @@ async function render(){
 		else{
 		//calculate raycast from camera to scene
 			for(var j=0;j<models[i].idx.length;j+=3){
+				//TODO: make raycast ignore list
+				if(i==1){continue;}
 
 				//TODO: make this a separate class
 
-				var startPos = glm.vec3.fromValues(camPos[0],camPos[1],camPos[2]);
+				var startPos = glm.vec3.fromValues(-camPos[0],-camPos[1],camPos[2]);
 				var rotation = glm.vec3.fromValues(-camRot[0],camRot[1],camRot[2]);
-				var len = 1000000;
+				var len = 10000;
 
 				var endPos = 
 					glm.vec3.create();
@@ -679,7 +694,7 @@ async function render(){
 
 					///57.296
 
-				glm.vec3.add(endPos,startPos,glm.vec3.fromValues(len*Math.sin(rotation[1]),len*Math.sin(rotation[0]),len*Math.cos(rotation[1])));
+				glm.vec3.add(endPos,startPos,glm.vec3.fromValues(len*Math.sin(rotation[1]),len*Math.tan(rotation[0]),len*Math.cos(rotation[1])));
 
 				//check if triangle intersects with line
 				
@@ -693,9 +708,9 @@ async function render(){
 				var v2 = glm.vec3.fromValues(models[i].pos[models[i].idx[j+1]*3],models[i].pos[models[i].idx[j+1]*3+1],models[i].pos[models[i].idx[j+1]*3+2]);
 				var v3 = glm.vec3.fromValues(models[i].pos[models[i].idx[j+2]*3],models[i].pos[models[i].idx[j+2]*3+1],models[i].pos[models[i].idx[j+2]*3+2]);
 
-				glm.vec3.subtract(v1,v1,glm.vec3.fromValues(-camPos[0],-camPos[1],camPos[2]));
-				glm.vec3.subtract(v2,v2,glm.vec3.fromValues(-camPos[0],-camPos[1],camPos[2]));
-				glm.vec3.subtract(v3,v3,glm.vec3.fromValues(-camPos[0],-camPos[1],camPos[2]));
+				//glm.vec3.subtract(v1,v1,glm.vec3.fromValues(-camPos[0],-camPos[1],camPos[2]));
+				//glm.vec3.subtract(v2,v2,glm.vec3.fromValues(-camPos[0],-camPos[1],camPos[2]));
+				//glm.vec3.subtract(v3,v3,glm.vec3.fromValues(-camPos[0],-camPos[1],camPos[2]));
 
 				var u = glm.vec3.create();
 				var v = glm.vec3.create();
@@ -763,12 +778,31 @@ async function render(){
 					continue;
 				}
 				var t = (uv*wu-uu*wv) / d;
+				
+				
 				if(t <= 0 || (s+t) > 1){
 					//console.log("not intersecting");
 					continue;
 				}
 
-				console.log("intersecting with triangle "+((j/3)+1)+" of object "+i);
+				//console.log(ii);
+				
+				
+				ffs = ii;
+				if(glm.vec3.distance(startPos,ii)<glm.vec3.distance(frontest,ii)){
+					//console.log("BAP")
+					frontest = ii;
+				}
+				//glm.vec3.add(ffs,ffs,glm.vec3.fromValues(-camPos[0],camPos[1],-camPos[2]));
+
+
+				//glm.vec3.add(ffs,ffs,camPos);
+
+
+				//console.log(pt1+",\n"+pt2+",\n"+pt3);
+
+
+				//console.log("intersecting with triangle "+((j/3)+1)+" of object "+i);
 
 				//*/
 			}
@@ -796,8 +830,6 @@ async function render(){
 	await device.queue.submit([encoder.finish()]);
 
 	console.log()
-
-	requestAnimationFrame(render);
 
 	deltaTime = Date.now() / 1000 - now;
 
@@ -897,7 +929,7 @@ async function input(){
 			return;
 		}
 		
-		if (event.ctrlKey) {
+		if (window.navigator.userAgent.match("Mac") ? event.metaKey : event.ctrlKey) {
 			alert(`Combination of ctrlKey + ${keyName}`);
 			} else {
 				held.set(keyName,true);
@@ -914,7 +946,7 @@ async function input(){
 			  return;
 		  }
 		  
-		  if (event.ctrlKey) {
+		  if (window.navigator.userAgent.match("Mac") ? event.metaKey : event.ctrlKey) {
 
 			if(held.get("s")){
 				event.preventDefault();
@@ -942,7 +974,12 @@ async function gameCode(){
 
 	//gameObjects[0].transform.rotation[0] = now * 5;
 
-	gameObjects[1].transform.rotation[1] = (now);
+	//gameObjects[1].transform.rotation[1] = (now);
+
+	var fucck = glm.vec3.create();
+	glm.vec3.multiply(fucck,frontest,glm.vec3.fromValues(1,1,-1))
+
+	gameObjects[1].transform.position = fucck;
 
 	//console.log(tex_window!=null);
 
@@ -989,10 +1026,11 @@ async function gameCode(){
 
 		var camRotOld = camRot;
 
-		camRot[0] += .5 * deltaTime * mdy;
+		camRot[0] = Math.min(Math.max(camRot[0]+ .5 * deltaTime * mdy, -1.57079), 1.57079)
 		camRot[1] += .5 * deltaTime * mdx;
 	
 	}
+
 
 
 
