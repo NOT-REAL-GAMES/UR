@@ -751,12 +751,12 @@ async function render(){
 				var d = uv * uv - uu * vv;
 
 				var s = (uv*wv-vv*wu) / d;
-				if(s <= 0 || s >= 1){
+				if(s <= 0 || s > 1){
 					//console.log("not intersecting");
 					continue;
 				}
 				var t = (uv*wu-uu*wv) / d;
-				if(t <= 0 || (s+t) >= 1){
+				if(t <= 0 || (s+t) > 1){
 					//console.log("not intersecting");
 					continue;
 				}
@@ -884,9 +884,9 @@ async function input(){
 	
 	document.onmousemove = (e) => {
 		mmx += e.movementX * .5;
-		mdx += e.movementX * .5;
+		mdx += e.movementX * .5 / (1+Math.abs(mdx)*window.devicePixelRatio);
 		mmy += e.movementY * .5;	
-		mdy += e.movementY * .5;	
+		mdy += e.movementY * .5 / (1+Math.abs(mdy));	
 	};
 
 	if(document.hidden){
@@ -949,7 +949,7 @@ var heldLast = new Map([]);
 
 async function gameCode(){
 		
-	await setTimeout(input,1000);
+	await setTimeout(input,100);
 
 	//gameObjects[0].transform.rotation[0] = now * 5;
 
