@@ -388,7 +388,7 @@ async function initializeScene(){
 					targets: [{format: 'bgra8unorm'}]
 				},
 				primitive: {
-					frontFace: 'cw',
+					frontFace: 'ccw',
 					cullMode: 'back',
 					topology: 'triangle-list'
 				},
@@ -453,8 +453,9 @@ async function ur(){
 }
 	
 
-async function updatePositionBuffers(){
+async function updatePositionBuffers(checkTransform){
 
+	if(checkTransform==true){
 	for(var i = 0;i<models.length;++i){
 
 		var tf = gameObjects[i].transform;
@@ -489,6 +490,7 @@ async function updatePositionBuffers(){
 				glm.mat4.fromQuat(mat,rot);
 
 			}
+		}
 	}
 
 
@@ -573,6 +575,7 @@ var ffs = glm.vec3.create();
 
 var firstcol = glm.vec3.create()
 var frontest = glm.vec3.create();
+var normal = glm.vec3.create();
 
 async function render(){
 	
@@ -582,7 +585,7 @@ async function render(){
 	
 	await gameCode();
 
-	await updatePositionBuffers();
+	await updatePositionBuffers(true);
 
 
 	colorAttachment = {
@@ -681,6 +684,9 @@ async function render(){
 			for(var j=0;j<models[i].idx.length;j+=3){
 				//TODO: make raycast ignore list
 				if(i==1){continue;}
+				if(i==2){continue;}
+				if(i==3){continue;}
+				if(i==4){continue;}
 
 				//TODO: make this a separate class
 
@@ -694,7 +700,13 @@ async function render(){
 
 					///57.296
 
-				glm.vec3.add(endPos,startPos,glm.vec3.fromValues(len*Math.sin(rotation[1]),len*Math.tan(rotation[0]),len*Math.cos(rotation[1])));
+				glm.vec3.add(endPos,startPos,
+					glm.vec3.fromValues(
+						len*Math.sin(rotation[1]),
+						len*Math.tan(rotation[0]),
+						len*Math.cos(rotation[1])
+					)
+				);
 
 				//check if triangle intersects with line
 				
@@ -707,6 +719,8 @@ async function render(){
 				var v1 = glm.vec3.fromValues(models[i].pos[models[i].idx[j]*3],models[i].pos[models[i].idx[j]*3+1],models[i].pos[models[i].idx[j]*3+2]);
 				var v2 = glm.vec3.fromValues(models[i].pos[models[i].idx[j+1]*3],models[i].pos[models[i].idx[j+1]*3+1],models[i].pos[models[i].idx[j+1]*3+2]);
 				var v3 = glm.vec3.fromValues(models[i].pos[models[i].idx[j+2]*3],models[i].pos[models[i].idx[j+2]*3+1],models[i].pos[models[i].idx[j+2]*3+2]);
+
+
 
 				//glm.vec3.subtract(v1,v1,glm.vec3.fromValues(-camPos[0],-camPos[1],camPos[2]));
 				//glm.vec3.subtract(v2,v2,glm.vec3.fromValues(-camPos[0],-camPos[1],camPos[2]));
@@ -721,6 +735,8 @@ async function render(){
 				var n = glm.vec3.create();
 				glm.vec3.cross(n,u,v);
 
+				glm.vec3.normalize(n,n);
+
 				//if (n==glm.vec3.create()) {console.log("degen tri"); continue;}
 
 				var w0 = glm.vec3.create();
@@ -732,14 +748,14 @@ async function render(){
 
 				if(b<0){continue;}
 					
-				/*if(Math.abs(b) < 0.00001){
+				if(Math.abs(b) < 0.00001){
 					if(a==0){
 						//console.log("parallel");
 						continue;}
 					else{
 						//console.log("not intersecting");
 						continue;}
-				}*/
+				}
 
 
 
@@ -789,10 +805,17 @@ async function render(){
 				
 				
 				ffs = ii;
-				if(glm.vec3.distance(startPos,ii)<glm.vec3.distance(frontest,ii)){
-					//console.log("BAP")
-					frontest = ii;
+				if(glm.vec3.distance(startPos,rd)>=glm.vec3.distance(frontest,rd)){
+					continue;	
 				}
+				//console.log("BAP")
+				frontest = ii;
+				normal = n;
+
+				gameObjects[1].transform.position = glm.vec3.fromValues(v1[0],v1[1],v1[2]);
+				gameObjects[2].transform.position = glm.vec3.fromValues(v2[0],v2[1],v2[2]);
+				gameObjects[3].transform.position = glm.vec3.fromValues(v3[0],v3[1],v3[2]);
+	
 				//glm.vec3.add(ffs,ffs,glm.vec3.fromValues(-camPos[0],camPos[1],-camPos[2]));
 
 
@@ -807,6 +830,13 @@ async function render(){
 				//*/
 			}
 		}
+
+		for(var v=0;v<models[i].pos.length;v+=3){
+			models[i].pos[v+2] *= -1;
+		}
+
+		await updatePositionBuffers(false);
+
 		pass.setViewport(0,0,context.getCurrentTexture().width,context.getCurrentTexture().height,0,1);
 		pass.setScissorRect(0,0,context.getCurrentTexture().width,context.getCurrentTexture().height);
 
@@ -822,6 +852,10 @@ async function render(){
 		pass.setVertexBuffer(1, modelsMeta[i].colBuf);
 		pass.setVertexBuffer(2, modelsMeta[i].uvBuf);
 		pass.drawIndexed(models[i].idx.length,1);	
+
+		/*for(var v=0;v<models[i].pos.length;v+=3){
+			models[i].pos[v+2] *= -1;
+		}*/
 		
 	}
 
@@ -972,14 +1006,19 @@ async function gameCode(){
 		
 	await setTimeout(input,100);
 
-	//gameObjects[0].transform.rotation[0] = now * 5;
+	gameObjects[0].transform.rotation[0] = now * 5;
 
 	//gameObjects[1].transform.rotation[1] = (now);
 
 	var fucck = glm.vec3.create();
-	glm.vec3.multiply(fucck,frontest,glm.vec3.fromValues(1,1,-1))
+	glm.vec3.multiply(fucck,frontest,glm.vec3.fromValues(1,1,1))
+	//glm.vec3.multiply(normal,normal,camRot)
 
-	gameObjects[1].transform.position = fucck;
+	//glm.vec3.multiply(normal,normal,glm.vec3.fromValues(57.296,57.296,57.296));
+
+	gameObjects[4].transform.position = fucck;
+	//glm.vec3.cross(normal,normal,camRot);
+	gameObjects[4].transform.rotation = normal;
 
 	//console.log(tex_window!=null);
 
@@ -998,6 +1037,9 @@ async function gameCode(){
 	}*/
 	
 	models[1].materials[0].albedo = createCheckerColorTexture(1,0,1,1);
+	models[2].materials[0].albedo = createCheckerColorTexture(1,0,1,1);
+	models[3].materials[0].albedo = createCheckerColorTexture(1,0,1,1);
+	models[4].materials[0].albedo = createCheckerColorTexture(1,0,1,1);
 
 	camx = camx + (0-camx) * .15;
 	camy = camy + (0-camy) * .15;

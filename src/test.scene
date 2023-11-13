@@ -22,7 +22,79 @@
 			"name": "cube2",
 			"position": [5,0,0],
 			"rotation": [0,0,0],
-			"scale": [0.33,0.01,0.01]
+			"scale": [0.1,0.01,0.01]
+		},
+		"components":{
+			"renderer":{
+				"modelSource": "./src/cube.json",
+				"materials": [{
+					"vertex": "./src/default.vert",
+					"fragment": "./src/default.frag",
+					"customVertexCode": false,
+					"customFragmentCode": false
+				}]
+			}
+		}
+	},{
+		"transform":{
+			"name": "cube3",
+			"position": [5,0,0],
+			"rotation": [0,0,0],
+			"scale": [0.1,0.01,0.01]
+		},
+		"components":{
+			"renderer":{
+				"modelSource": "./src/cube.json",
+				"materials": [{
+					"vertex": "./src/default.vert",
+					"fragment": "./src/default.frag",
+					"customVertexCode": false,
+					"customFragmentCode": false
+				}]
+			}
+		}
+	},{
+		"transform":{
+			"name": "cube4",
+			"position": [5,0,0],
+			"rotation": [0,0,0],
+			"scale": [0.1,0.01,0.01]
+		},
+		"components":{
+			"renderer":{
+				"modelSource": "./src/cube.json",
+				"materials": [{
+					"vertex": "./src/default.vert",
+					"fragment": "./src/default.frag",
+					"customVertexCode": false,
+					"customFragmentCode": false
+				}]
+			}
+		}
+	},{
+		"transform":{
+			"name": "cube5",
+			"position": [5,0,0],
+			"rotation": [0,0,0],
+			"scale": [0.1,0.01,0.01]
+		},
+		"components":{
+			"renderer":{
+				"modelSource": "./src/cube.json",
+				"materials": [{
+					"vertex": "./src/default.vert",
+					"fragment": "./src/default.frag",
+					"customVertexCode": false,
+					"customFragmentCode": false
+				}]
+			}
+		}
+	},{
+		"transform":{
+			"name": "cube",
+			"position": [5,5,5],
+			"rotation": [0,0,0],
+			"scale": [2,1,1]
 		},
 		"components":{
 			"renderer":{
