@@ -447,9 +447,9 @@ async function ur(){
 
 	await render();
 
-	setInterval(() => {
-		requestAnimationFrame(render);
-	}, 10);
+	//setInterval(() => {
+	//	requestAnimationFrame(render);
+	//}, 10);
 }
 	
 
@@ -520,6 +520,7 @@ async function updatePositionBuffers(checkTransform){
 			++j;
 		}
 
+		console.log(newpos.length);
 		modelsMeta.push({
 			posBuf: await createBuffer(newpos, GPUBufferUsage.VERTEX),
 			colBuf: await createBuffer(newcol, GPUBufferUsage.VERTEX),
@@ -735,9 +736,9 @@ async function render(){
 				var n = glm.vec3.create();
 				glm.vec3.cross(n,u,v);
 
-				glm.vec3.normalize(n,n);
+				//glm.vec3.normalize(n,n);
 
-				//if (n==glm.vec3.create()) {console.log("degen tri"); continue;}
+				if (n==glm.vec3.create()) {console.log("degen tri"); continue;}
 
 				var w0 = glm.vec3.create();
 				glm.vec3.subtract(w0,startPos,v1);
@@ -810,7 +811,16 @@ async function render(){
 				}
 				//console.log("BAP")
 				frontest = ii;
-				normal = n;
+
+				var bla = glm.vec3.dot(u,v)
+
+				
+				
+				normal = glm.vec3.fromValues(
+					0,
+					Math.atan2(n[2],n[0])*-57.296,
+					0);
+				//normal = n;
 
 				gameObjects[1].transform.position = glm.vec3.fromValues(v1[0],v1[1],v1[2]);
 				gameObjects[2].transform.position = glm.vec3.fromValues(v2[0],v2[1],v2[2]);
@@ -868,6 +878,8 @@ async function render(){
 	deltaTime = Date.now() / 1000 - now;
 
 	now = Date.now() / 1000;
+
+	requestAnimationFrame(render);
 	
 }
 
@@ -1006,19 +1018,20 @@ async function gameCode(){
 		
 	await setTimeout(input,100);
 
-	gameObjects[0].transform.rotation[0] = now * 5;
+	gameObjects[0].transform.rotation[1] = now * 5;
 
 	//gameObjects[1].transform.rotation[1] = (now);
 
 	var fucck = glm.vec3.create();
 	glm.vec3.multiply(fucck,frontest,glm.vec3.fromValues(1,1,1))
-	//glm.vec3.multiply(normal,normal,camRot)
+	//glm.vec3.multiply(normal,normal,glm.vec3.fromValues(180,180,180))
 
 	//glm.vec3.multiply(normal,normal,glm.vec3.fromValues(57.296,57.296,57.296));
 
 	gameObjects[4].transform.position = fucck;
 	//glm.vec3.cross(normal,normal,camRot);
 	gameObjects[4].transform.rotation = normal;
+	
 
 	//console.log(tex_window!=null);
 
