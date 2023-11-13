@@ -471,7 +471,7 @@ async function updatePositionBuffers(){
 
 				pos = glm.vec3.fromValues(tf.position[0],tf.position[1],tf.position[2]);					
 								
-				scl = 1 + tf.scale[0];
+				scl = tf.scale[0];
 
 				models[i].pos = scale(models[i].pos,scl);
 								
