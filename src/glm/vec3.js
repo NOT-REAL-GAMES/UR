@@ -93,6 +93,13 @@ export function set(out, x, y, z) {
   return out;
 }
 
+export function abs(a) {
+  if(a[0]<0){a[0]*=-1;}
+  if(a[1]<0){a[1]*=-1;}
+  if(a[2]<0){a[2]*=-1;}
+  return a[0]+a[1]+a[2];
+}
+
 /**
  * Adds two vec3's
  *

@@ -831,27 +831,42 @@ async function render(){
 
 				//glm.vec3.normalize(dir,dir);
 
-				glm.vec3.cross(x,w0,n);
-				glm.vec3.cross(y,x,n);
-				glm.vec3.multiply(y,y,glm.vec3.fromValues(-1,-1,-1));
-				glm.vec3.cross(z,x,y);
-				glm.vec3.multiply(z,z,glm.vec3.fromValues(-1,-1,-1));
+				var nn = glm.vec3.create();
+				glm.vec3.cross(nn,n,dir);
 
-				//glm.vec3.cross(y,n,glm.vec3.fromValues(
-				//	glm.vec3.dot(u,u),glm.vec3.dot(u,u),glm.vec3.dot(u,u)));
-	
+				glm.vec3.normalize(n,n);
+
+				glm.vec3.cross(x,glm.vec3.fromValues(0,1,0),n);
+				if(x[0]==0&&x[1]==0&&x[2]==0){x=glm.vec3.fromValues(1,0,0);}
+
+				glm.vec3.cross(y,x,n);
+				//glm.vec3.multiply(y,y,glm.vec3.fromValues(-1,-1,-1));
+				glm.vec3.cross(z,x,y);
+				//glm.vec3.multiply(z,z,glm.vec3.fromValues(-1,-1,-1));
 
 				glm.vec3.normalize(x,x);
 				glm.vec3.normalize(y,y);
 				glm.vec3.normalize(z,z);
 
 
-				var zxy = Math.sqrt(n[0]*n[0]+n[1]*n[1]);
+				var zxy = Math.sqrt(z[0]*z[0]+z[1]*z[1]);
 
 				//pre = Math.atan2(n[])
 
 
-				//console.log(normal);
+				//console.log(n);
+
+				pre = Math.atan2(y[0]*z[1]-y[1]*z[0],x[0]*z[1]-x[1]*z[0]);
+				nut = Math.atan2(zxy, z[2]);
+				rot = -Math.atan2(-z[0],z[1]);
+
+				console.log(pre+","+nut+","+rot);
+
+				normal = glm.vec3.fromValues(
+					pre*57.296,
+					nut*-57.296,
+					rot*57.296
+				);
 
 				var debugx = glm.vec3.create();
 				var debugy = glm.vec3.create();
@@ -1048,8 +1063,8 @@ async function gameCode(){
 		
 	await setTimeout(input,100);
 
-	gameObjects[0].transform.rotation[0] = now * 5;
 	gameObjects[0].transform.rotation[1] = now * 5;
+	//gameObjects[0].transform.rotation[2] = now * 5;
 
 	//gameObjects[1].transform.rotation[1] = (now);
 
