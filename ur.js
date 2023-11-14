@@ -520,7 +520,7 @@ async function updatePositionBuffers(checkTransform){
 			++j;
 		}
 
-		console.log(newpos.length);
+		//console.log(newpos.length);
 		modelsMeta.push({
 			posBuf: await createBuffer(newpos, GPUBufferUsage.VERTEX),
 			colBuf: await createBuffer(newcol, GPUBufferUsage.VERTEX),
@@ -713,7 +713,6 @@ async function render(){
 				
 				var dir = glm.vec3.create();
 				glm.vec3.subtract(dir,endPos,startPos);
-				//glm.vec3.normalize(dir,dir);
 
 				//console.log(dir);
 
@@ -806,7 +805,7 @@ async function render(){
 				
 				
 				ffs = ii;
-				if(glm.vec3.distance(startPos,rd)>=glm.vec3.distance(frontest,rd)){
+				if(glm.vec3.distance(startPos,ii)>=glm.vec3.distance(frontest,startPos)){
 					continue;	
 				}
 				//console.log("BAP")
@@ -814,26 +813,57 @@ async function render(){
 
 				var bla = glm.vec3.dot(u,v)
 
-				
-				
-				normal = glm.vec3.fromValues(
-					0,
-					Math.atan2(n[2],n[0])*-57.296,
-					0);
-				//normal = n;
+				//glm.vec3.normalize(n,n);
 
-				gameObjects[1].transform.position = glm.vec3.fromValues(v1[0],v1[1],v1[2]);
-				gameObjects[2].transform.position = glm.vec3.fromValues(v2[0],v2[1],v2[2]);
-				gameObjects[3].transform.position = glm.vec3.fromValues(v3[0],v3[1],v3[2]);
+
+				//atan2(atan2(z,x),atan2(x,z)) ??
+
+				var pre;
+				var nut;
+				var rot;
+
+				var x = glm.vec3.create();
+				var y = glm.vec3.create();
+				var z = glm.vec3.create();
+
+				//glm.vec3.cross(x,n,w0);
+				//glm.vec3.cross(y,n,ii);
+
+				//glm.vec3.normalize(dir,dir);
+
+				glm.vec3.cross(x,w0,n);
+				glm.vec3.cross(y,x,n);
+				glm.vec3.multiply(y,y,glm.vec3.fromValues(-1,-1,-1));
+				glm.vec3.cross(z,x,y);
+				glm.vec3.multiply(z,z,glm.vec3.fromValues(-1,-1,-1));
+
+				//glm.vec3.cross(y,n,glm.vec3.fromValues(
+				//	glm.vec3.dot(u,u),glm.vec3.dot(u,u),glm.vec3.dot(u,u)));
 	
-				//glm.vec3.add(ffs,ffs,glm.vec3.fromValues(-camPos[0],camPos[1],-camPos[2]));
+
+				glm.vec3.normalize(x,x);
+				glm.vec3.normalize(y,y);
+				glm.vec3.normalize(z,z);
 
 
-				//glm.vec3.add(ffs,ffs,camPos);
+				var zxy = Math.sqrt(n[0]*n[0]+n[1]*n[1]);
+
+				//pre = Math.atan2(n[])
 
 
-				//console.log(pt1+",\n"+pt2+",\n"+pt3);
+				//console.log(normal);
 
+				var debugx = glm.vec3.create();
+				var debugy = glm.vec3.create();
+				var debugz = glm.vec3.create();
+
+				glm.vec3.add(debugx,x,ii);
+				glm.vec3.add(debugy,y,ii);
+				glm.vec3.add(debugz,z,ii);
+
+				gameObjects[1].transform.position = debugx;
+				gameObjects[2].transform.position = debugy;
+				gameObjects[3].transform.position = debugz;
 
 				//console.log("intersecting with triangle "+((j/3)+1)+" of object "+i);
 
@@ -1018,6 +1048,7 @@ async function gameCode(){
 		
 	await setTimeout(input,100);
 
+	gameObjects[0].transform.rotation[0] = now * 5;
 	gameObjects[0].transform.rotation[1] = now * 5;
 
 	//gameObjects[1].transform.rotation[1] = (now);
@@ -1049,10 +1080,10 @@ async function gameCode(){
 
 	}*/
 	
-	models[1].materials[0].albedo = createCheckerColorTexture(1,0,1,1);
-	models[2].materials[0].albedo = createCheckerColorTexture(1,0,1,1);
-	models[3].materials[0].albedo = createCheckerColorTexture(1,0,1,1);
-	models[4].materials[0].albedo = createCheckerColorTexture(1,0,1,1);
+	models[1].materials[0].albedo = createCheckerColorTexture(1,0,0,1);
+	models[2].materials[0].albedo = createCheckerColorTexture(0,1,0,1);
+	models[3].materials[0].albedo = createCheckerColorTexture(0,0,1,1);
+	models[4].materials[0].albedo = createCheckerColorTexture(1,1,1,1);
 
 	camx = camx + (0-camx) * .15;
 	camy = camy + (0-camy) * .15;

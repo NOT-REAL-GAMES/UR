@@ -93,7 +93,7 @@
 		"transform":{
 			"name": "cube",
 			"position": [5,5,5],
-			"rotation": [0,45,0],
+			"rotation": [0,0,0],
 			"scale": [2,1,1]
 		},
 		"components":{
@@ -111,7 +111,25 @@
 		"transform":{
 			"name": "floor",
 			"position": [0,-15,0],
-			"rotation": [0,45,0],
+			"rotation": [45,0,0],
+			"scale": [2,1,1]
+		},
+		"components":{
+			"renderer":{
+				"modelSource": "./src/floor.json",
+				"materials": [{
+					"vertex": "./src/default.vert",
+					"fragment": "./src/default.frag",
+					"customVertexCode": false,
+					"customFragmentCode": false
+				}]		
+			}
+		}
+	},{
+		"transform":{
+			"name": "floor2",
+			"position": [0,-15,0],
+			"rotation": [0,0,45],
 			"scale": [2,1,1]
 		},
 		"components":{
