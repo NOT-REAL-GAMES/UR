@@ -98,6 +98,8 @@ const draw = (e) => {
 async function init(){
 	now = Date.now();
 
+	await setInterval(input,100);
+
 	canvas = document.querySelector("#ur");
 	adapter = await navigator.gpu.requestAdapter();
 	device = await adapter.requestDevice({
@@ -1063,10 +1065,9 @@ var camx = 0,camy = 0;
 
 var heldLast = new Map([]);
 
-async function gameCode(){
-		
-	await setTimeout(input,100);
+var camrotx = 0, camroty = 0; 
 
+async function gameCode(){
 
 	gameObjects[0].transform.rotation[1] = now * 5;
 	gameObjects[0].transform.rotation[2] = now * 5;
@@ -1113,8 +1114,8 @@ async function gameCode(){
 	models[3].materials[0].albedo = createCheckerColorTexture(0,0,1,1);
 	models[4].materials[0].albedo = createCheckerColorTexture(1,1,1,1);
 
-	camx = camx + (0-camx) * .15;
-	camy = camy + (0-camy) * .15;
+	camx = camx + (0-camx) * .25;
+	camy = camy + (0-camy) * .25;
 
 	//console.log(camx+","+camy);
 
@@ -1140,8 +1141,11 @@ async function gameCode(){
 
 		var camRotOld = camRot;
 
-		camRot[0] = Math.min(Math.max(camRot[0]+ .5 * deltaTime * mdy, -1.57079), 1.57079)
-		camRot[1] += .5 * deltaTime * mdx;
+		mdx = mdx + (0-mdx)*.2;
+		mdy = mdy + (0-mdy)*.2;
+
+		camRot[0] = Math.min(Math.max(camRot[0]+ .15 * deltaTime * mdy, -1.57079), 1.57079)
+		camRot[1] += .15 * deltaTime * mdx;
 	
 	}
 
