@@ -73,14 +73,14 @@
 		}
 	},{
 		"transform":{
-			"name": "cube5",
+			"name": "selector",
 			"position": [5,0,0],
 			"rotation": [0,0,0],
 			"scale": [0.1,0.01,0.01]
 		},
 		"components":{
 			"renderer":{
-				"modelSource": "./src/cube.json",
+				"modelSource": "./src/flatcube.json",
 				"materials": [{
 					"vertex": "./src/default.vert",
 					"fragment": "./src/default.frag",
