@@ -849,9 +849,6 @@ async function render(){
 				glm.vec3.normalize(z,z);
 
 
-				var zxy = Math.sqrt(z[0]*z[0]+z[1]*z[1]);
-
-				pre = Math.tanh(n[1])
 				nut = -Math.acos(n[1])
 				rot = -Math.atan2(n[2],n[0]);
 
