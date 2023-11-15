@@ -851,22 +851,30 @@ async function render(){
 
 				var zxy = Math.sqrt(z[0]*z[0]+z[1]*z[1]);
 
-				//pre = Math.atan2(n[])
+				pre = Math.tanh(n[1])
+				nut = -Math.acos(n[1])
+				rot = -Math.atan2(n[2],n[0]);
 
 
-				//console.log(n);
 
-				pre = Math.atan2(y[0]*z[1]-y[1]*z[0],x[0]*z[1]-x[1]*z[0]);
-				nut = Math.atan2(zxy, z[2]);
-				rot = -Math.atan2(-z[0],z[1]);
+				console.log(nut)
 
-				console.log(pre+","+nut+","+rot);
 
-				normal = glm.vec3.fromValues(
-					pre*57.296,
-					nut*-57.296,
-					rot*57.296
-				);
+				//console.log(pre+","+nut+","+rot);
+
+				var blalb = glm.quat.create();
+				//glm.quat.fromEuler(blalb,pre*57.296,nut*57.296,rot*57.296);
+				
+				glm.quat.rotateY(blalb,blalb,rot);
+				glm.quat.rotateZ(blalb,blalb,nut);
+				//glm.quat.rotateZ(blalb,blalb,nut);
+
+
+				normal = glm.vec3.fromQuat(blalb);
+				
+				//normal = glm.vec3.fromValues(Math.asin(n[0])*57.296,Math.acos(n[1])*57.296,Math.atan(n[2])*57.296)
+
+				console.log(normal);
 
 				var debugx = glm.vec3.create();
 				var debugy = glm.vec3.create();
@@ -1064,18 +1072,14 @@ async function gameCode(){
 	await setTimeout(input,100);
 
 	gameObjects[0].transform.rotation[1] = now * 5;
-	//gameObjects[0].transform.rotation[2] = now * 5;
+	gameObjects[0].transform.rotation[2] = now * 5;
 
 	//gameObjects[1].transform.rotation[1] = (now);
 
 	var fucck = glm.vec3.create();
 	glm.vec3.multiply(fucck,frontest,glm.vec3.fromValues(1,1,1))
-	//glm.vec3.multiply(normal,normal,glm.vec3.fromValues(180,180,180))
-
-	//glm.vec3.multiply(normal,normal,glm.vec3.fromValues(57.296,57.296,57.296));
 
 	gameObjects[4].transform.position = fucck;
-	//glm.vec3.cross(normal,normal,camRot);
 	gameObjects[4].transform.rotation = normal;
 	
 

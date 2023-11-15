@@ -582,6 +582,33 @@ export function transformQuat(out, a, q) {
   return out;
 }
 
+export function fromQuat(q){
+  let out = create(); 
+
+  let qx = q[0],
+    qy = q[1],
+    qz = q[2],
+    qw = q[3];
+  
+  //console.log(qx+","+qy+","+qz+","+qw)
+
+  let sinr_cosp = 2 * (qw * qx + qy * qz);
+  let cosr_cosp = 1 - 2 * (qx *qx + qy * qy);
+  out[0] = (Math.atan2(sinr_cosp, cosr_cosp)) * 57.296;
+
+  let sinp = Math.sqrt(1 + 2 * (qw * qy - qx * qz));
+  let cosp = Math.sqrt(Math.abs(1 - 2 * (qw * qy - qx * qz)));  
+  out[1] = (2 * Math.atan2(sinp,cosp) - Math.PI / 2 )* 57.296;
+  
+  let siny_cosp = 2 * (qw * qz + qx * qy);
+  let cosy_cosp = 1 - 2 * (qy * qy + qz * qz);
+  out[2] = (Math.atan2(siny_cosp, cosy_cosp)) * 57.296;
+
+  if(out[0]<-89.9 && out[2]<-89.9){ out[1]*=-1; }
+
+  return out;
+}
+
 /**
  * Rotate a 3D vector around the x-axis
  * @param {vec3} out The receiving vec3
