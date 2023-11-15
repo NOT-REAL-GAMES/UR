@@ -861,7 +861,7 @@ async function render(){
 				nut = Math.acos(-n[1])
 				rot = -Math.atan2(n[2],n[0]);
 
-				console.log(nut)
+				//console.log(nut)
 
 
 				//console.log(pre+","+nut+","+rot);
@@ -878,7 +878,7 @@ async function render(){
 				
 				//normal = glm.vec3.fromValues(Math.asin(n[0])*57.296,Math.acos(n[1])*57.296,Math.atan(n[2])*57.296)
 
-				console.log(normal);
+				//console.log(normal);
 
 				debugx = x;
 				debugy = y;
