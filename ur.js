@@ -256,6 +256,10 @@ var objIndex = 0;
 var depthTexDesc;
 	
 async function initializeScene(){
+
+	debugx = glm.vec3.create();
+	debugy = glm.vec3.create();
+	debugz = glm.vec3.create();
 	
 	await fetch('./src/test.scene').then((response) => response.json()).then((json) => {scene = json;});	
 
@@ -578,7 +582,13 @@ var firstcol = glm.vec3.create()
 var frontest = glm.vec3.create();
 var normal = glm.vec3.create();
 
+var debugx;
+var debugy;
+var debugz;
+	
+
 async function render(){
+
 	
 	//console.clear();
 
@@ -855,8 +865,6 @@ async function render(){
 				nut = -Math.acos(n[1])
 				rot = -Math.atan2(n[2],n[0]);
 
-
-
 				console.log(nut)
 
 
@@ -876,17 +884,9 @@ async function render(){
 
 				console.log(normal);
 
-				var debugx = glm.vec3.create();
-				var debugy = glm.vec3.create();
-				var debugz = glm.vec3.create();
-
-				glm.vec3.add(debugx,x,ii);
-				glm.vec3.add(debugy,y,ii);
-				glm.vec3.add(debugz,z,ii);
-
-				gameObjects[1].transform.position = debugx;
-				gameObjects[2].transform.position = debugy;
-				gameObjects[3].transform.position = debugz;
+				debugx = x;
+				debugy = y;
+				debugz = z;
 
 				//console.log("intersecting with triangle "+((j/3)+1)+" of object "+i);
 
@@ -1071,17 +1071,30 @@ async function gameCode(){
 		
 	await setTimeout(input,100);
 
+
 	gameObjects[0].transform.rotation[1] = now * 5;
 	gameObjects[0].transform.rotation[2] = now * 5;
 
 	//gameObjects[1].transform.rotation[1] = (now);
 
-	var fucck = glm.vec3.create();
-	glm.vec3.multiply(fucck,frontest,glm.vec3.fromValues(1,1,1))
+	glm.vec3.add(debugx,debugx,frontest);
+	glm.vec3.add(debugy,debugy,frontest);
+	glm.vec3.add(debugz,debugz,frontest);			
 
-	gameObjects[4].transform.position = fucck;
+
+	gameObjects[4].transform.position = frontest;
 	gameObjects[4].transform.rotation = normal;
 	
+	gameObjects[1].transform.position = debugx;
+	gameObjects[1].transform.rotation = normal;
+
+	gameObjects[2].transform.position = debugy;
+	gameObjects[2].transform.rotation = normal;
+	
+	gameObjects[3].transform.position = debugz;
+	gameObjects[3].transform.rotation = normal;
+
+
 
 	//console.log(tex_window!=null);
 
