@@ -692,6 +692,8 @@ async function render(){
 		if(typeof models[i].idx==="undefined"){}
 		else{
 		//calculate raycast from camera to scene
+			
+			//TODO: add check to see if ray is within bounds of an object to prevent unnecessary calculations
 			for(var j=0;j<models[i].idx.length;j+=3){
 				//TODO: make raycast ignore list
 				if(i==1){continue;}
@@ -729,12 +731,6 @@ async function render(){
 				var v1 = glm.vec3.fromValues(models[i].pos[models[i].idx[j]*3],models[i].pos[models[i].idx[j]*3+1],models[i].pos[models[i].idx[j]*3+2]);
 				var v2 = glm.vec3.fromValues(models[i].pos[models[i].idx[j+1]*3],models[i].pos[models[i].idx[j+1]*3+1],models[i].pos[models[i].idx[j+1]*3+2]);
 				var v3 = glm.vec3.fromValues(models[i].pos[models[i].idx[j+2]*3],models[i].pos[models[i].idx[j+2]*3+1],models[i].pos[models[i].idx[j+2]*3+2]);
-
-
-
-				//glm.vec3.subtract(v1,v1,glm.vec3.fromValues(-camPos[0],-camPos[1],camPos[2]));
-				//glm.vec3.subtract(v2,v2,glm.vec3.fromValues(-camPos[0],-camPos[1],camPos[2]));
-				//glm.vec3.subtract(v3,v3,glm.vec3.fromValues(-camPos[0],-camPos[1],camPos[2]));
 
 				var u = glm.vec3.create();
 				var v = glm.vec3.create();
