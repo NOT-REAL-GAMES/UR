@@ -852,7 +852,7 @@ async function render(){
 				glm.vec3.cross(y,x,n);
 				glm.vec3.multiply(y,y,glm.vec3.fromValues(-1,-1,-1));
 				glm.vec3.cross(z,x,y);
-				 glm.vec3.multiply(z,z,glm.vec3.fromValues(-1,-1,-1));
+				glm.vec3.multiply(z,z,glm.vec3.fromValues(-1,-1,-1));
 
 				glm.vec3.normalize(x,x);
 				glm.vec3.normalize(y,y);
