@@ -846,9 +846,9 @@ async function render(){
 				if(x[0]==0&&x[1]==0&&x[2]==0){x=glm.vec3.fromValues(1,0,0);}
 
 				glm.vec3.cross(y,x,n);
-				//glm.vec3.multiply(y,y,glm.vec3.fromValues(-1,-1,-1));
+				glm.vec3.multiply(y,y,glm.vec3.fromValues(-1,-1,-1));
 				glm.vec3.cross(z,x,y);
-				//glm.vec3.multiply(z,z,glm.vec3.fromValues(-1,-1,-1));
+				glm.vec3.multiply(z,z,glm.vec3.fromValues(-1,-1,-1));
 
 				glm.vec3.normalize(x,x);
 				glm.vec3.normalize(y,y);
@@ -1020,7 +1020,7 @@ async function input(){
 	document.onkeydown = (event) =>{
 		  const keyName = event.key;
 	  
-		if (keyName === "Control") {
+		if (keyName === "Control" || keyName === "Meta") {
 			return;
 		}
 		
@@ -1037,7 +1037,7 @@ async function input(){
 
 			const keyName = event.key;
 		
-		  if (keyName === "Control") {
+		  if (keyName === "Control" || keyName === "Meta") {
 			  return;
 		  }
 		  
