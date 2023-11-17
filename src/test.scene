@@ -19,60 +19,6 @@
 		}
 	},{
 		"transform":{
-			"name": "cube2",
-			"position": [5,0,0],
-			"rotation": [0,0,0],
-			"scale": [0.1,0.01,0.01]
-		},
-		"components":{
-			"renderer":{
-				"modelSource": "./src/cube.json",
-				"materials": [{
-					"vertex": "./src/default.vert",
-					"fragment": "./src/default.frag",
-					"customVertexCode": false,
-					"customFragmentCode": false
-				}]
-			}
-		}
-	},{
-		"transform":{
-			"name": "cube3",
-			"position": [5,0,0],
-			"rotation": [0,0,0],
-			"scale": [0.1,0.01,0.01]
-		},
-		"components":{
-			"renderer":{
-				"modelSource": "./src/cube.json",
-				"materials": [{
-					"vertex": "./src/default.vert",
-					"fragment": "./src/default.frag",
-					"customVertexCode": false,
-					"customFragmentCode": false
-				}]
-			}
-		}
-	},{
-		"transform":{
-			"name": "cube4",
-			"position": [5,0,0],
-			"rotation": [0,0,0],
-			"scale": [0.1,0.01,0.01]
-		},
-		"components":{
-			"renderer":{
-				"modelSource": "./src/cube.json",
-				"materials": [{
-					"vertex": "./src/default.vert",
-					"fragment": "./src/default.frag",
-					"customVertexCode": false,
-					"customFragmentCode": false
-				}]
-			}
-		}
-	},{
-		"transform":{
 			"name": "selector",
 			"position": [5,0,0],
 			"rotation": [0,0,0],
@@ -143,5 +89,61 @@
 				}]		
 			}
 		}
-	}]
+	},{
+		"transform":{
+			"name": "x",
+			"position": [5,0,0],
+			"rotation": [0,0,0],
+			"scale": [0.1,0.01,0.01]
+		},
+		"components":{
+			"renderer":{
+				"modelSource": "./src/cube.json",
+				"materials": [{
+					"vertex": "./src/default.vert",
+					"fragment": "./src/default.frag",
+					"customVertexCode": false,
+					"customFragmentCode": false
+				}]
+			}
+		}
+	},{
+		"transform":{
+			"name": "y",
+			"position": [5,0,0],
+			"rotation": [0,0,0],
+			"scale": [0.1,0.01,0.01]
+		},
+		"components":{
+			"renderer":{
+				"modelSource": "./src/cube.json",
+				"materials": [{
+					"vertex": "./src/default.vert",
+					"fragment": "./src/default.frag",
+					"customVertexCode": false,
+					"customFragmentCode": false
+				}]
+			}
+		}
+	},{
+		"transform":{
+			"name": "z",
+			"position": [5,0,0],
+			"rotation": [0,0,0],
+			"scale": [0.1,0.01,0.01]
+		},
+		"components":{
+			"renderer":{
+				"modelSource": "./src/cube.json",
+				"materials": [{
+					"vertex": "./src/default.vert",
+					"fragment": "./src/default.frag",
+					"customVertexCode": false,
+					"customFragmentCode": false
+				}]
+			}
+		}
+	}
+	
+	]
 }

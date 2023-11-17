@@ -1,18 +1,12 @@
 //ok, smart guy, let's see you take a crack at it!!!
 //🧩 🧩
 
-//
-
 //NOTES FOR FUTURE REFERENCE:
-//11/8/23
-//PICK PASS IS OUT
-//replace that dumb bullshit with a
-//system that accounts for the data
-//established for rendering being
-//utilized for selecting objects instead
-//of trying some fancy rendering tricks 
+//11/17/23
+//fuuuck i really need to split up all this code uuuugh
 
 import * as glm from './src/glm/index.js';
+import * as jq from './src/jquery-3.7.1.js';
 
 var canvas; var adapter; var device;
 var queue; var context; var pipelines = [];
@@ -56,6 +50,13 @@ var camRot = [0,0,0];
 var tex_window;
 var tex_canvas;
 var tex_context;
+
+var objSelected;
+var objSelectedNormal;
+var objSelectedTriangle = -1;
+var objSelectedTrianglePos = glm.vec3.create();
+
+var currentOrientation = "Global";
 
 var tex_image = new Array (0);
 
@@ -380,8 +381,8 @@ async function initializeScene(){
 			//initialize pipelines here?
 			//TODO: optimize pipeline creation
 
-		
-			const pipelineDesc = {
+
+			var pipelineDesc = {
 				layout: layout,
 				vertex: {
 					module: vModule,
@@ -404,6 +405,11 @@ async function initializeScene(){
 					format: 'depth24plus-stencil8'
 				}
 			};
+
+			if(i==5||i==6||i==7){
+				pipelineDesc.depthStencil.depthCompare = "not-equal"
+			}
+
 		
 			pipelines.push(device.createRenderPipeline(pipelineDesc));
 
@@ -431,6 +437,10 @@ async function initializeScene(){
 }
 
 async function ur(){
+
+	document.getElementById("ur").width = window.innerWidth*2/(1+deltaTime);
+	document.getElementById("ur").height = window.innerHeight*2/(1+deltaTime);
+
 	if (!navigator.gpu) {return;}
 
 	await init();
@@ -587,23 +597,40 @@ var normal = glm.vec3.create();
 var debugx;
 var debugy;
 var debugz;
+
+var Orientation = {
+	Global: 'Global',
+	Local: 'Local',
+	Normal: 'Normal',
+  };
+  
 	
+var frontestObjIndex = -1;
+var frontestTriIndex  = -1;
+var frontestNormal = glm.vec3.create();
+
+var x = glm.vec3.create();
+var y = glm.vec3.create();
+var z = glm.vec3.create();
+
 
 async function render(){
 
+	deltaTime = Date.now() / 1000 - now;
 	
 	//console.clear();
 
 	//await setInterval(,500);
 	
-	await gameCode();
+	gameCode();
 
-	await updatePositionBuffers(true);
+	updatePositionBuffers(true);
 
+	frontestObjIndex = -1;
 
 	colorAttachment = {
 		view: context.getCurrentTexture().createView(),
-		clearValue: {r:0,g:0,b:0,a:1},
+		clearValue: {r:1,g:0,b:.4,a:1},
 		loadOp: 'clear',
 		storeOp: 'store'
 	};
@@ -699,9 +726,9 @@ async function render(){
 			for(var j=0;j<models[i].idx.length;j+=3){
 				//TODO: make raycast ignore list
 				if(i==1){continue;}
-				if(i==2){continue;}
-				if(i==3){continue;}
-				if(i==4){continue;}
+				if(i==5){continue;}
+				if(i==6){continue;}
+				if(i==7){continue;}
 
 				//TODO: make this a separate class
 
@@ -830,10 +857,6 @@ async function render(){
 				var nut;
 				var rot;
 
-				var x = glm.vec3.create();
-				var y = glm.vec3.create();
-				var z = glm.vec3.create();
-
 				//glm.vec3.cross(x,n,w0);
 				//glm.vec3.cross(y,n,ii);
 
@@ -844,19 +867,6 @@ async function render(){
 
 				glm.vec3.normalize(n,n);
 
-				glm.vec3.cross(x,glm.vec3.fromValues(0,1,0),n);
-				if(x[0]==0&&x[1]==0&&x[2]==0){x=glm.vec3.fromValues(1,0,0);}
-
-				glm.vec3.cross(y,x,n);
-				glm.vec3.multiply(y,y,glm.vec3.fromValues(-1,-1,-1));
-				glm.vec3.cross(z,x,y);
-				glm.vec3.multiply(z,z,glm.vec3.fromValues(-1,-1,-1));
-
-				glm.vec3.normalize(x,x);
-				glm.vec3.normalize(y,y);
-				glm.vec3.normalize(z,z);
-
-
 				var zxy = Math.sqrt(z[0]*z[0]+z[1]*z[1]);
 
 				pre = Math.tanh(n[1])
@@ -864,8 +874,9 @@ async function render(){
 				rot = -Math.atan2(n[2],n[0]);
 
 				//console.log(nut)
-
-
+				frontestObjIndex = i;
+				frontestTriIndex = j;
+				frontestNormal = n;
 				//console.log(pre+","+nut+","+rot);
 
 				var blalb = glm.quat.create();
@@ -882,9 +893,12 @@ async function render(){
 
 				//console.log(normal);
 
-				debugx = x;
-				debugy = y;
-				debugz = z;
+
+				if(i==objSelected){
+					
+
+				}
+				
 
 				//console.log("intersecting with triangle "+((j/3)+1)+" of object "+i);
 
@@ -926,8 +940,6 @@ async function render(){
 
 	console.log()
 
-	deltaTime = Date.now() / 1000 - now;
-
 	now = Date.now() / 1000;
 
 	requestAnimationFrame(render);
@@ -942,6 +954,14 @@ function clicked(e) {
 
     switch (e.button) {
         case 0:
+			console.log(frontestObjIndex);
+			//TODO: write unique class where all the data is stored
+			objSelected = frontestObjIndex;
+			objSelectedNormal = normal;
+			
+				
+			objSelectedTriangle = frontestTriIndex;
+
           // left mouse button
           break;
         case 1:
@@ -1074,24 +1094,107 @@ async function gameCode(){
 
 	//gameObjects[1].transform.rotation[1] = (now);
 
-	glm.vec3.add(debugx,debugx,frontest);
-	glm.vec3.add(debugy,debugy,frontest);
-	glm.vec3.add(debugz,debugz,frontest);			
-
-
-	gameObjects[4].transform.position = frontest;
-	gameObjects[4].transform.rotation = normal;
-	
-	gameObjects[1].transform.position = debugx;
+	gameObjects[1].transform.position = frontest;
 	gameObjects[1].transform.rotation = normal;
-
-	gameObjects[2].transform.position = debugy;
-	gameObjects[2].transform.rotation = normal;
 	
-	gameObjects[3].transform.position = debugz;
-	gameObjects[3].transform.rotation = normal;
 
 
+	if(objSelected >= 0){
+
+		var p = glm.vec3.create();
+
+		var v1 = glm.vec3.fromValues(
+			models[objSelected].pos[models[objSelected].idx[objSelectedTriangle]*3],
+			models[objSelected].pos[models[objSelected].idx[objSelectedTriangle]*3+1],
+			models[objSelected].pos[models[objSelected].idx[objSelectedTriangle]*3+2])
+		var v2 =glm.vec3.fromValues(			
+			models[objSelected].pos[models[objSelected].idx[objSelectedTriangle+1]*3],
+			models[objSelected].pos[models[objSelected].idx[objSelectedTriangle+1]*3+1],
+			models[objSelected].pos[models[objSelected].idx[objSelectedTriangle+1]*3+2])
+		var v3 = glm.vec3.fromValues(			
+			models[objSelected].pos[models[objSelected].idx[objSelectedTriangle+2]*3],
+			models[objSelected].pos[models[objSelected].idx[objSelectedTriangle+2]*3+1],
+			models[objSelected].pos[models[objSelected].idx[objSelectedTriangle+2]*3+2]);
+		
+		glm.vec3.add(p,p,v1);
+		glm.vec3.add(p,p,v2);
+		glm.vec3.add(p,p,v3);
+
+		glm.vec3.divide(p,p,glm.vec3.fromValues(3,3,3));
+
+		glm.vec3.multiply(p,p,glm.vec3.fromValues(1,1,-1))
+
+		glm.vec3.multiply(v1,v1,glm.vec3.fromValues(1,1,-1))
+		glm.vec3.multiply(v2,v2,glm.vec3.fromValues(1,1,-1))
+		glm.vec3.multiply(v3,v3,glm.vec3.fromValues(1,1,-1))
+
+
+		objSelectedTrianglePos = p;
+
+		var s = glm.vec3.distance(camPos,objSelectedTrianglePos)*.2;
+		
+		if(currentOrientation===Orientation.Normal){
+			var u = glm.vec3.create();
+			var v = glm.vec3.create();
+
+			glm.vec3.subtract(u,v2,v1);
+			glm.vec3.subtract(v,v3,v1);
+
+			var n = glm.vec3.create();
+			glm.vec3.cross(n,u,v);
+		
+			glm.vec3.normalize(n,n);
+
+			glm.vec3.cross(x,glm.vec3.fromValues(0,s,0),n);
+			if(x[0]==0&&x[1]==0&&x[2]==0){x=glm.vec3.fromValues(s,0,0);}
+
+			//glm.vec3.multiply(x,x,glm.vec3.fromValues(-1,-1,-1));
+
+			glm.vec3.cross(y,x,n);
+			glm.vec3.multiply(y,y,glm.vec3.fromValues(-s,-s,-s));
+			glm.vec3.cross(z,x,y);
+			glm.vec3.multiply(z,z,glm.vec3.fromValues(-s,-s,-s));
+
+			glm.vec3.normalize(x,x);
+			glm.vec3.normalize(y,y);
+			glm.vec3.normalize(z,z);		
+			
+			gameObjects[5].transform.rotation = gameObjects[objSelected].transform.rotation;
+			gameObjects[6].transform.rotation = gameObjects[objSelected].transform.rotation;
+			gameObjects[7].transform.rotation = gameObjects[objSelected].transform.rotation;
+	
+		}	
+
+		else if (currentOrientation===Orientation.Global){
+			x = glm.vec3.fromValues(s,0,0);
+			y = glm.vec3.fromValues(0,s,0);
+			z = glm.vec3.fromValues(0,0,s);
+
+			gameObjects[5].transform.rotation = glm.vec3.create();
+			gameObjects[6].transform.rotation = glm.vec3.create();
+			gameObjects[7].transform.rotation = glm.vec3.create();
+
+		}
+
+		glm.vec3.add(debugx,x,objSelectedTrianglePos);
+		glm.vec3.add(debugy,y,objSelectedTrianglePos);
+		glm.vec3.add(debugz,z,objSelectedTrianglePos);
+	
+		gameObjects[5].transform.position = debugx;
+		gameObjects[6].transform.position = debugy;		
+		gameObjects[7].transform.position = debugz;
+		
+
+		gameObjects[5].transform.scale = glm.vec3.fromValues(s/8,s/8,s/8);
+		gameObjects[6].transform.scale = glm.vec3.fromValues(s/8,s/8,s/8);
+		gameObjects[7].transform.scale = glm.vec3.fromValues(s/8,s/8,s/8);
+
+
+	}
+		//if(glm.vec3.distance(currentnormalx,gameObjects[objSelected].transform.position)>2){
+		//}
+
+	
 
 	//console.log(tex_window!=null);
 
@@ -1109,10 +1212,10 @@ async function gameCode(){
 
 	}*/
 	
-	models[1].materials[0].albedo = createCheckerColorTexture(1,0,0,1);
-	models[2].materials[0].albedo = createCheckerColorTexture(0,1,0,1);
-	models[3].materials[0].albedo = createCheckerColorTexture(0,0,1,1);
-	models[4].materials[0].albedo = createCheckerColorTexture(1,1,1,1);
+	models[5].materials[0].albedo = createCheckerColorTexture(1,0,0,1);
+	models[6].materials[0].albedo = createCheckerColorTexture(0,1,0,1);
+	models[7].materials[0].albedo = createCheckerColorTexture(0,0,1,1);
+	models[1].materials[0].albedo = createCheckerColorTexture(1,1,1,1);
 
 	camx = camx + (0-camx) * .25;
 	camy = camy + (0-camy) * .25;
